@@ -628,7 +628,7 @@ return ‘<div>’
 +’<div style="font-family:Georgia,serif;font-size:1.25rem;font-weight:700;margin-bottom:3px">Title Race & Champions League Run-In</div>’
 +’<div style="font-size:0.7rem;color:#555;margin-bottom:16px">MD31 - 8 games remaining</div>’
 +’<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px">’+cards+’</div>’
-+’<div style="text-align:center;margin-bottom:16px"><button class="B" onclick="doRunIn()">’+(ran?‘Resimulate’:‘Simulate Run-In’)+’</button></div>’
++’<div style="text-align:center;margin-bottom:16px"><button class="B" data-action="runin">’+(ran?‘Resimulate’:‘Simulate Run-In’)+’</button></div>’
 +tables+’</div>’;
 }
 
@@ -706,16 +706,11 @@ return ‘<div><div style="font-family:Georgia,serif;font-size:1.25rem;font-weig
 
 // – SIMULATOR
 function buildSelect(id, val) {
-return ‘<select class="S" id="'+id+'" onchange="onSel()">’
+return ‘<select class="S" id="'+id+'" data-action="selchange">’
 +TEAMS.map(function(t){ return ‘<option value=”’+t.abbr+’”’+(t.abbr===val?’ selected’:’’)+’>’+esc(t.name)+’</option>’; }).join(’’)
 +’</select>’;
 }
-function onSel() {
-state.home=document.getElementById(‘sh’).value;
-state.away=document.getElementById(‘sa’).value;
-state.match=null; state.evs=[]; state.score={h:0,a:0}; state.fin=false; state.playing=false;
-render();
-}
+// onSel handled by event delegation
 function doKickOff() {
 if (state.home===state.away||state.playing) return;
 var m = h2h(state.home, state.away);
@@ -789,7 +784,7 @@ return ‘<div style="background:#0c1018;border:1px solid #181e28;padding:10px">
 }).join(’’)+’</div>’
 +preProbs
 +’<div style="text-align:center;margin-bottom:14px">’
-+’<button class=“B” onclick=“doKickOff()” ‘+(state.home===state.away||state.playing?‘disabled’:’’)+’>’
++’<button class=“B” data-action=“kickoff” ‘+(state.home===state.away||state.playing?‘disabled’:’’)+’>’
 +(state.playing?‘Live…’:state.fin?‘Replay’:‘Kick Off’)+’</button></div>’
 +matchArea
 +(state.hist.length?’<div style="background:#0c1018;border:1px solid #181e28;margin-top:8px"><div style="padding:8px 10px;font-size:0.58rem;color:#555;letter-spacing:0.1em;text-transform:uppercase;border-bottom:1px solid #151b25">Match History</div>’+histRows+’</div>’:’’)
@@ -804,7 +799,7 @@ setTimeout(function(){ setState({mc:mcRun(1000),mcr:false}); },60);
 function renderMonte() {
 var mc=state.mc; var mcr=state.mcr;
 if(mcr) return ‘<div style="text-align:center;padding:60px 20px"><div class="pulse" style="font-size:2rem;margin-bottom:10px">⚙️</div><div style="font-size:0.75rem;color:#555">Running 1,000 scenarios…</div></div>’;
-var btn=’<div style="text-align:center;margin-bottom:20px"><button class="B" onclick="doMC()">’+(mc?‘Re-run 1,000 Scenarios’:‘Run 1,000 Scenarios’)+’</button></div>’;
+var btn=’<div style="text-align:center;margin-bottom:20px"><button class="B" data-action="mc">’+(mc?‘Re-run 1,000 Scenarios’:‘Run 1,000 Scenarios’)+’</button></div>’;
 if(!mc) return ‘<div>’+btn+’</div>’;
 
 var titleSorted=TOP6.slice().sort(function(a,b){ return mc.titles[b.abbr]-mc.titles[a.abbr]; });
@@ -925,7 +920,7 @@ function setTab(t){ state.tab=t; render(); }
 function render() {
 var TABS=[[‘runin’,‘Run-In’],[‘stats’,‘Stats’],[‘tactics’,‘Tactics’],[‘simulator’,‘Simulator’],[‘monte’,‘1000 Scenarios’]];
 var tabBtns=TABS.map(function(item){
-return ‘<button class="T'+(state.tab===item[0]?' on':'')+'" onclick="setTab(\''+item[0]+'\')">’+item[1]+’</button>’;
+return ‘<button class=“T’+(state.tab===item[0]?’ on’:’’)+’” data-action=“tab-’+item[0]+’””>’+item[1]+’</button>’;
 }).join(’’);
 var content=’’;
 if(state.tab===‘runin’)      content=renderRunIn();
@@ -947,6 +942,34 @@ document.getElementById(‘root’).innerHTML=
 +’<div style="max-width:980px;margin:0 auto;padding:20px 16px">’+content+’</div>’
 +’</div>’;
 }
+// ── EVENT DELEGATION (no inline handlers - Safari safe)
+document.addEventListener(‘click’, function(e) {
+var el = e.target;
+// Walk up to find element with data-action
+while (el && el !== document) {
+var action = el.getAttribute(‘data-action’);
+if (action) {
+if (action === ‘runin’) { doRunIn(); return; }
+if (action === ‘mc’) { doMC(); return; }
+if (action === ‘kickoff’) { doKickOff(); return; }
+if (action.indexOf(‘tab-’) === 0) { setTab(action.slice(4)); return; }
+}
+el = el.parentNode;
+}
+});
+document.addEventListener(‘change’, function(e) {
+var el = e.target;
+if (el && el.getAttribute(‘data-action’) === ‘selchange’) {
+var sh = document.getElementById(‘sh’);
+var sa = document.getElementById(‘sa’);
+if (sh) state.home = sh.value;
+if (sa) state.away = sa.value;
+state.match = null; state.evs = []; state.score = {h:0,a:0};
+state.fin = false; state.playing = false;
+render();
+}
+});
+
 render();
 
   </script>
