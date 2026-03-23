@@ -31,7 +31,7 @@ ACM: { xG:1.73, xGA:0.83, shots:13.7, overperf:0.2,  xPTS:53.2,  str:76,   ppda:
 COM: { xG:1.72, xGA:0.79, shots:14.3, overperf:3.0,  xPTS:51.8,  str:82,   ppda:9.3,  block:“Med Press”,    bk:“medium” },
 };
 
-// Full 20-team pressing profiles — Statsbomb Feb 2026 + Opta MD24 + tactical analysis
+// Full 20-team pressing profiles - Statsbomb Feb 2026 + Opta MD24 + tactical analysis
 // Groups per Statsbomb: (1) Systematic high press: Bologna, Como, Roma, Atalanta
 // (2) High in opp half, compact own: Genoa, Inter, Juventus, Napoli, Parma
 // (3) Space in build-up, aggressive own half: Cagliari, Fiorentina, Verona
@@ -155,7 +155,7 @@ ROM: [
 ],
 };
 
-// GK is always index 0 — scorer selection uses slice(1) to exclude him
+// GK is always index 0 - scorer selection uses slice(1) to exclude him
 var    PL = {
 INT: [“Sommer”,“Acerbi”,“Bastoni”,“Bisseck”,“Barella”,“Calhanoglu”,“Sucic”,“Dimarco”,“Dumfries”,“Thuram”,“Esposito”],
 NAP: [“Milinkovic-Savic”,“Juan Jesus”,“Buongiorno”,“Olivera”,“Politano”,“Gilmour”,“Lobotka”,“Spinazzola”,“De Bruyne”,“McTominay”,“Hojlund”],
@@ -185,15 +185,15 @@ var    CMTS = [
 ];
 
 var    BLOCK_MU = {
-“high_vs_low”:     { atk:4,  gm:0.85, label:“High press struggles vs deep block — counters likely” },
-“high_vs_medium”:  { atk:3,  gm:1.1,  label:“High press disrupts shape — energetic open game” },
-“high_vs_high”:    { atk:1,  gm:1.25, label:“Battle of presses — end-to-end, high xG expected” },
+“high_vs_low”:     { atk:4,  gm:0.85, label:“High press struggles vs deep block - counters likely” },
+“high_vs_medium”:  { atk:3,  gm:1.1,  label:“High press disrupts shape - energetic open game” },
+“high_vs_high”:    { atk:1,  gm:1.25, label:“Battle of presses - end-to-end, high xG expected” },
 “medium_vs_high”:  { atk:1,  gm:0.95, label:“Structured shape absorbs press well” },
 “medium_vs_low”:   { atk:2,  gm:1.0,  label:“Medium press overloads low block in transition” },
-“medium_vs_medium”:{ atk:0,  gm:1.0,  label:“Balanced game — quality decides” },
-“low_vs_high”:     { atk:5,  gm:0.85, label:“Low block soaks press, lethal on counter — Milan’s speciality” },
+“medium_vs_medium”:{ atk:0,  gm:1.0,  label:“Balanced game - quality decides” },
+“low_vs_high”:     { atk:5,  gm:0.85, label:“Low block soaks press, lethal on counter - Milan’s speciality” },
 “low_vs_medium”:   { atk:2,  gm:0.9,  label:“Deep shape exploits space on transitions” },
-“low_vs_low”:      { atk:-2, gm:0.7,  label:“Defensive chess — low scoring, set pieces crucial” },
+“low_vs_low”:      { atk:-2, gm:0.7,  label:“Defensive chess - low scoring, set pieces crucial” },
 };
 
 var    ACM_TOP6 = [
@@ -206,17 +206,17 @@ var    ACM_TOP6 = [
 ];
 
 var    TEAM_DESC = {
-INT: “Chivu’s 3-5-2 with organised mid-block that triggers coordinated press in opponent half. Excellent defensive transitions. Akanji–Bastoni–Bisseck the league’s best defensive trio.”,
-NAP: “Conte’s geggenpress — man-oriented pressing in all zones. Forces turnovers high up the pitch but high defensive line is exposed vs direct play. McTominay and Anguissa the engine.”,
+INT: “Chivu’s 3-5-2 with organised mid-block that triggers coordinated press in opponent half. Excellent defensive transitions. Akanji-Bastoni-Bisseck the league’s best defensive trio.”,
+NAP: “Conte’s geggenpress - man-oriented pressing in all zones. Forces turnovers high up the pitch but high defensive line is exposed vs direct play. McTominay and Anguissa the engine.”,
 ACM: “Allegri’s 4-4-2. Defend deep, stay compact, win ball fast in own half and launch Leao or Gimenez in behind. Serie A’s best record vs top-6 this season with W3 D3 L0.”,
-COM: “Fabregas positional play — medium press to win ball in the middle third. Fast transitions via Nico Paz and Diao. PPDA reflects controlled, structured defending not passivity.”,
+COM: “Fabregas positional play - medium press to win ball in the middle third. Fast transitions via Nico Paz and Diao. PPDA reflects controlled, structured defending not passivity.”,
 };
 
 var    TEAM_STR = {
-INT: “Ball retention under pressure · Clinical counter-attack · Dominant set pieces”,
-NAP: “High turnover rate · Aggressive man-marking · Tireless engine room”,
-ACM: “Defensive solidity · Elite counter speed · W3 D3 L0 vs top-6”,
-COM: “Positional structure · Versatile transitions · League-best xGA”,
+INT: “Ball retention under pressure . Clinical counter-attack . Dominant set pieces”,
+NAP: “High turnover rate . Aggressive man-marking . Tireless engine room”,
+ACM: “Defensive solidity . Elite counter speed . W3 D3 L0 vs top-6”,
+COM: “Positional structure . Versatile transitions . League-best xGA”,
 };
 
 var    BC = { high:”#ff6d00”, medium:”#c9a84c”, low:”#69f0ae” };
@@ -228,7 +228,7 @@ INT: {
 players: [“Lautaro (soleo, rientro fine marzo)”, “Mkhitaryan (muscolare, rientro inizio aprile)”],
 diffidati: [“Carlos Augusto”, “Sucic”],
 // Lautaro borderline for MD31 (fine marzo), Mkhitaryan likely back MD31
-// Bastoni NOT injured — fit
+// Bastoni NOT injured - fit
 strPenalty: 8,   // only Lautaro likely out MD31
 xGPenalty: 0.22, // losing Lautaro’s goals but Thuram starts
 outUntilMd: 32,
@@ -255,11 +255,11 @@ strPenalty: 2,
 xGPenalty: 0.0,
 outUntilMd: 31, // no meaningful impact
 },
-// Roma hugely depleted for MD31 vs Inter — Dybala, Dovbyk, Soulé, Ferguson all out
+// Roma hugely depleted for MD31 vs Inter - Dybala, Dovbyk, Soulé, Ferguson all out
 ROM_MD31_oppStrReduction: 16,
 };
 
-// ─── xG estimates: goals scored/conceded per game, 25% regression to league mean ─
+// — xG estimates: goals scored/conceded per game, 25% regression to league mean -
 // League mean 1.21/game (Serie A 2.42 total). Top-4 overridden by real Statsbomb xG.
 var GXG = {
 INT: { xg:2.00, xga:0.88 }, // overridden by ADV real xG in h2h
@@ -284,10 +284,10 @@ PIS: { xg:0.85, xga:1.35 },
 VER: { xg:0.90, xga:1.60 },
 };
 
-// ─── CALIBRATED TO SERIE A 2025-26 ACTUALS ────────────────────────────────
-// Real league stats: Home wins 39% · Draws 26% · Away wins 34% · Avg goals 2.45
-// Home avg goals ~1.30 · Away avg goals ~1.15
-// ─────────────────────────────────────────────────────────────────────────────
+// — CALIBRATED TO SERIE A 2025-26 ACTUALS ––––––––––––––––
+// Real league stats: Home wins 39% . Draws 26% . Away wins 34% . Avg goals 2.45
+// Home avg goals ~1.30 . Away avg goals ~1.15
+// —————————————————————————–
 
 // Recency-weighted form: last game x3, second-to-last x2, rest x1
 function fscore(form) {
@@ -316,31 +316,31 @@ if (abbr === “INT” && fx.oppAbbr === “ROM” && fx.md === 31) { oppReducti
 
 var myStr  = Math.max(1, (a.str || 50) - injStr);
 var oppStr = Math.max(1, os - oppReduction);
-var formBonus = fscore(t.form); // 0–1
+var formBonus = fscore(t.form); // 0-1
 
 // Stronger gap coefficient: 10pts = 0.32 log-odds (was 0.25, too weak for mismatches)
 var strGap = myStr - oppStr;
 var logOddsAdj = strGap * 0.032;
 
-// Form: lighter weight (0.4 not 0.6) — season-long quality > 5-game form
+// Form: lighter weight (0.4 not 0.6) - season-long quality > 5-game form
 logOddsAdj += (formBonus - 0.5) * 0.4;
 
 // Home advantage: +0.25 home, -0.20 away
 var homeAdj = fx.h ? 0.25 : -0.20;
 logOddsAdj += homeAdj;
 
-// xG quality bonus — small, max ±0.12
+// xG quality bonus - small, max +/-0.12
 var xgBonus = ((a.xG || 1.5) - 1.5) * 0.12 + (1.1 - (a.xGA || 1.1)) * 0.15 - injXG * 0.1;
 logOddsAdj += xgBonus;
 
 // Convert log-odds to win probability via logistic
 var winP = 100 / (1 + Math.exp(-logOddsAdj));
 
-// Draw: lower floor (6%), faster decay with gap — Serie A draws rare in mismatches
+// Draw: lower floor (6%), faster decay with gap - Serie A draws rare in mismatches
 var drawBase = 26 - Math.abs(strGap) * 0.50 - Math.abs(formBonus - 0.5) * 4;
 var drawP = Math.min(28, Math.max(6, drawBase));
 
-// Higher win cap (85%, was 78%) — strong teams can dominate weak ones
+// Higher win cap (85%, was 78%) - strong teams can dominate weak ones
 var remaining = 100 - drawP;
 var hWin = Math.min(85, Math.max(6, winP * remaining / 100));
 var aWin = Math.max(4, remaining - hWin);
@@ -380,7 +380,7 @@ var hXGA = hA.xGA || (GXG[ha]  ? GXG[ha].xga : 1.21);
 var aXG  = aA.xG  || (GXG[aa]  ? GXG[aa].xg  : 1.21);
 var aXGA = aA.xGA || (GXG[aa]  ? GXG[aa].xga : 1.21);
 
-// Geometric mean of attack×defence ratios dampens extremes in top matchups
+// Geometric mean of attackxdefence ratios dampens extremes in top matchups
 var hAtt = hXG  / 1.21;
 var hDef = 1.21 / aXGA;
 var aAtt = aXG  / 1.21;
@@ -391,7 +391,7 @@ var strRatio = Math.pow(hS / Math.max(aS, 1), 0.15);
 var hL = 1.30 * Math.sqrt(hAtt * hDef) * strRatio * muH.gm;
 var aL = 1.15 * Math.sqrt(aAtt * aDef) * (1 / strRatio) * muA.gm;
 
-// Clamp to realistic Serie A range (0.4–2.8 goals expected per team)
+// Clamp to realistic Serie A range (0.4-2.8 goals expected per team)
 hL = Math.min(2.8, Math.max(0.4, hL));
 aL = Math.min(2.8, Math.max(0.4, aL));
 
@@ -424,9 +424,9 @@ var hProbs = probs(ha, { oppAbbr:aa, h:true, md:99 });
 return { hG:hG, aG:aG, evs:evs, hW:Math.round(hProbs.winP), dP:Math.round(hProbs.drawP), aW:Math.round(hProbs.lossP), tacticLabel:muH.label, hBk:hTD.bk, aBk:aTD.bk, hBlock:hTD.block, aBlock:aTD.block, hTeam:hT, aTeam:aT };
 }
 
-// H2H fixtures between top-4 teams — must be simulated ONCE per scenario
-// format: { md, home, away } — home team hosts
-// All direct H2H clashes between top-6 teams — simulated once per scenario
+// H2H fixtures between top-4 teams - must be simulated ONCE per scenario
+// format: { md, home, away } - home team hosts
+// All direct H2H clashes between top-6 teams - simulated once per scenario
 var TOP4_H2H = [
 { md:31, home:“NAP”, away:“ACM” },
 { md:31, home:“INT”, away:“ROM” },
@@ -524,7 +524,7 @@ else { c = “#00e676”; l = “Must Win”; }
 return ‘<span style="color:'+c+';font-family:\'DM Sans\',sans-serif;font-size:0.64rem">’+l+’</span>’;
 }
 
-// ─── STATE ────────────────────────────────────────────────────────────────────
+// — STATE ––––––––––––––––––––––––––––––––––
 var state = {
 tab: ‘runin’,
 sim: {},
@@ -550,7 +550,7 @@ Object.assign(state, patch);
 render();
 }
 
-// ─── HELPERS ─────────────────────────────────────────────────────────────────
+// — HELPERS —————————————————————–
 function esc(s) {
 return String(s).replace(/&/g,’&’).replace(/</g,’<’).replace(/>/g,’>’).replace(/”/g,’"’);
 }
@@ -564,7 +564,7 @@ function formDots(form) {
 return form.map(colorBox).join(’’);
 }
 
-// ─── RUN-IN TAB ───────────────────────────────────────────────────────────────
+// — RUN-IN TAB —————————————————————
 function doRunIn() {
 var h2hResults = {};
 TOP4_H2H.forEach(function(clash) {
@@ -612,7 +612,7 @@ return ‘<div style="background:#0c1018;border:1px solid #181e28;padding:12px 1
 +’<div style="font-family:\'Playfair Display\',serif;font-size:1.5rem;font-weight:900;color:#c9a84c">’+t.pts+’<span style="font-size:0.6rem;color:#555;margin-left:3px">pts</span></div>’
 +’<div style="font-family:\'DM Sans\',sans-serif;font-size:0.78rem;font-weight:600">’+t.name+’</div>’
 +(inj ? ‘<div style="font-size:0.56rem;color:#ff6d00;margin-top:2px">🚑 ‘+inj.players[0].split(’(’)[0].trim()+’…</div>’ : ‘’)
-+(proj !== null ? ‘<div style="font-family:\'DM Sans\',sans-serif;font-size:0.68rem;color:#69f0ae;margin-top:3px">→ Proj: ‘+proj+’</div>’ : ‘’)
++(proj !== null ? ‘<div style="font-family:\'DM Sans\',sans-serif;font-size:0.68rem;color:#69f0ae;margin-top:3px">-> Proj: ‘+proj+’</div>’ : ‘’)
 +’</div>’;
 }).join(’’);
 
@@ -630,7 +630,7 @@ var rows = FX[team.abbr].map(function(fx, i) {
   var resCell = r
     ? '<span style="display:inline-block;padding:2px 8px;font-family:\'DM Sans\',sans-serif;font-size:0.63rem;font-weight:700;background:'+(r.res==='W'?'rgba(0,230,118,0.15)':r.res==='D'?'rgba(255,215,64,0.15)':'rgba(255,23,68,0.12)')+';color:'+(r.res==='W'?'#00e676':r.res==='D'?'#ffd740':'#ff1744')+'">'+r.res+' +'+(r.res==='W'?3:r.res==='D'?1:0)+'</span>'
     : '<span style="color:#333;font-size:0.63rem">pending</span>';
-  var winCell = r ? '<span style="color:#69f0ae;font-size:0.63rem">'+r.winP+'%</span><span style="color:#333;font-size:0.58rem"> / '+r.drawP+'%</span>' : '<span style="color:#222">—</span>';
+  var winCell = r ? '<span style="color:#69f0ae;font-size:0.63rem">'+r.winP+'%</span><span style="color:#333;font-size:0.58rem"> / '+r.drawP+'%</span>' : '<span style="color:#222">-</span>';
   return '<div style="display:grid;grid-template-columns:28px 56px 16px 1fr 56px 72px 72px 72px;padding:7px 12px;border-bottom:1px solid #0d1117;align-items:center;background:'+(fx.big?'rgba(201,168,76,0.03)':'transparent')+'">'
     +'<div style="font-family:\'DM Sans\',sans-serif;font-size:0.63rem;color:#555">'+fx.md+'</div>'
     +'<div style="font-family:\'DM Sans\',sans-serif;font-size:0.63rem;color:#555">'+fx.date+'</div>'
@@ -648,7 +648,7 @@ return '<div style="background:#0c1018;border:1px solid #181e28;margin-bottom:12
   +'<div style="width:3px;height:32px;background:'+team.color+';flex-shrink:0"></div>'
   +'<div style="flex:1">'
   +'<div style="font-family:\'Playfair Display\',serif;font-size:0.95rem;font-weight:700">'+team.name+'</div>'
-  +'<div style="font-family:\'DM Sans\',sans-serif;font-size:0.63rem;color:#555">'+team.pts+'pts'+(a.xG?' · xG '+a.xG:'')+(a.str?' · Str '+a.str:'')+'</div>'
+  +'<div style="font-family:\'DM Sans\',sans-serif;font-size:0.63rem;color:#555">'+team.pts+'pts'+(a.xG?' . xG '+a.xG:'')+(a.str?' . Str '+a.str:'')+'</div>'
   +'</div>'
   +(res?'<div style="display:flex;gap:3px;align-items:center">'+resBoxes+'</div>':'')
   +'</div>'
@@ -663,7 +663,7 @@ return '<div style="background:#0c1018;border:1px solid #181e28;margin-bottom:12
 
 return ‘<div>’
 +’<div style="font-family:\'Playfair Display\',serif;font-size:1.25rem;font-weight:700;margin-bottom:3px">Title Race & Champions League Run-In</div>’
-+’<div style="font-family:\'DM Sans\',sans-serif;font-size:0.7rem;color:#555;margin-bottom:16px">MD31 · 8 games remaining for all teams</div>’
++’<div style="font-family:\'DM Sans\',sans-serif;font-size:0.7rem;color:#555;margin-bottom:16px">MD31 . 8 games remaining for all teams</div>’
 +’<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px">’+cards+’</div>’
 +’<div style="text-align:center;margin-bottom:16px">’
 +’<button class="B" onclick="doRunIn()">’+(ran?‘🔄 Resimulate’:‘⚡ Simulate Run-In’)+’</button>’
@@ -672,7 +672,7 @@ return ‘<div>’
 +’</div>’;
 }
 
-// ─── STATS TAB ────────────────────────────────────────────────────────────────
+// — STATS TAB ––––––––––––––––––––––––––––––––
 function renderStats() {
 var metrics = [
 {key:‘xG’,    label:‘xG / game’,    hi:true,  fmt:function(v){return v;}},
@@ -721,13 +721,13 @@ return ‘<div style="background:#0c1018;border:1px solid #181e28;overflow:hidde
 
 return ‘<div>’
 +’<div style="font-family:\'Playfair Display\',serif;font-size:1.25rem;font-weight:700;margin-bottom:3px">Advanced Statistics</div>’
-+’<div style="font-family:\'DM Sans\',sans-serif;font-size:0.7rem;color:#555;margin-bottom:16px">StatsUltra · MD30</div>’
++’<div style="font-family:\'DM Sans\',sans-serif;font-size:0.7rem;color:#555;margin-bottom:16px">StatsUltra . MD30</div>’
 +bars
 +’<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:8px">’+cards+’</div>’
 +’</div>’;
 }
 
-// ─── TACTICS TAB ──────────────────────────────────────────────────────────────
+// — TACTICS TAB –––––––––––––––––––––––––––––––
 function renderTactics() {
 var ppda_sorted = Object.keys(TDATA).map(function(k) {
 return { abbr:k, ppda:TDATA[k].ppda, block:TDATA[k].block };
@@ -750,7 +750,7 @@ return ‘<div style="display:flex;align-items:center;gap:8px;padding:5px 10px;b
 var bkLabels = {high:‘High Press’, medium:‘Med Press’, low:‘Low Block’};
 var bkKeys = [‘high’,‘medium’,‘low’];
 var matrixHeader = ‘<div style="display:grid;grid-template-columns:100px repeat(3,1fr);gap:2px;margin-bottom:4px">’
-+’<div style="font-size:0.52rem;color:#444;font-family:\'DM Sans\',sans-serif">Attacker ↓ / Def →</div>’
++’<div style="font-size:0.52rem;color:#444;font-family:\'DM Sans\',sans-serif">Attacker v / Def -></div>’
 +bkKeys.map(function(k){ return ‘<div style="font-size:0.58rem;color:#888;font-family:\'DM Sans\',sans-serif;text-align:center">vs ‘+bkLabels[k]+’</div>’; }).join(’’)
 +’</div>’;
 var matrixRows = bkKeys.map(function(atk) {
@@ -761,7 +761,7 @@ var mu = BLOCK_MU[atk+’*vs*’+def] || {label:’’,atk:0,gm:1.0};
 var col = mu.gm > 1.05 ? ‘#00e676’ : mu.gm < 0.95 ? ‘#ff1744’ : ‘#ffd740’;
 return ‘<div style="background:#0c1018;border:1px solid #181e28;padding:8px;text-align:center">’
 +’<div style="font-size:0.6rem;color:'+col+';font-family:\'DM Sans\',sans-serif;font-weight:600">’+mu.label+’</div>’
-+’<div style="font-size:0.54rem;color:#555;font-family:\'DM Sans\',sans-serif">×’+mu.gm+’</div>’
++’<div style="font-size:0.54rem;color:#555;font-family:\'DM Sans\',sans-serif">x’+mu.gm+’</div>’
 +’</div>’;
 }).join(’’)
 +’</div>’;
@@ -769,9 +769,9 @@ return ‘<div style="background:#0c1018;border:1px solid #181e28;padding:8px;te
 
 return ‘<div>’
 +’<div style="font-family:\'Playfair Display\',serif;font-size:1.25rem;font-weight:700;margin-bottom:3px">Tactical Analysis</div>’
-+’<div style="font-family:\'DM Sans\',sans-serif;font-size:0.7rem;color:#555;margin-bottom:16px">PPDA · Statsbomb Feb 2026</div>’
++’<div style="font-family:\'DM Sans\',sans-serif;font-size:0.7rem;color:#555;margin-bottom:16px">PPDA . Statsbomb Feb 2026</div>’
 +’<div style="background:#0c1018;border:1px solid #181e28;padding:14px 16px;margin-bottom:12px">’
-+’<div style="font-family:\'DM Sans\',sans-serif;font-size:0.58rem;color:#c9a84c;letter-spacing:0.14em;text-transform:uppercase;margin-bottom:10px">PPDA League Table — Pressing Intensity</div>’
++’<div style="font-family:\'DM Sans\',sans-serif;font-size:0.58rem;color:#c9a84c;letter-spacing:0.14em;text-transform:uppercase;margin-bottom:10px">PPDA League Table - Pressing Intensity</div>’
 +ppda_rows+’</div>’
 +’<div style="background:#0c1018;border:1px solid #181e28;padding:14px 16px;">’
 +’<div style="font-family:\'DM Sans\',sans-serif;font-size:0.58rem;color:#c9a84c;letter-spacing:0.14em;text-transform:uppercase;margin-bottom:10px">Tactical Block Matchup Matrix</div>’
@@ -779,7 +779,7 @@ return ‘<div>’
 +’</div>’;
 }
 
-// ─── SIMULATOR TAB ────────────────────────────────────────────────────────────
+// — SIMULATOR TAB ————————————————————
 function buildTeamSelect(id, val) {
 var opts = TEAMS.map(function(t) {
 return ‘<option value=”’+t.abbr+’”’+(t.abbr===val?’ selected’:’’)+’>’+esc(t.name)+’</option>’;
@@ -825,7 +825,7 @@ updateFeed();
 function updateFeed() {
 var feed = document.getElementById(‘feed’);
 var scoreEl = document.getElementById(‘live-score’);
-if (scoreEl) scoreEl.textContent = state.score.h + ’ – ’ + state.score.a;
+if (scoreEl) scoreEl.textContent = state.score.h + ’ - ’ + state.score.a;
 if (feed) {
 var evs = state.evs;
 feed.innerHTML = evs.map(function(ev) {
@@ -861,8 +861,8 @@ return ‘<div style="background:#0c1018;border:1px solid #181e28;padding:10px;t
 
 var matchArea = ‘’;
 if (m) {
-var scoreDisplay = ‘<div style="font-family:\'Playfair Display\',serif;font-size:3rem;font-weight:900;color:#c9a84c;text-align:center" id="live-score">’+state.score.h+’ – ‘+state.score.a+’</div>’;
-var statusLabel = state.fin ? ‘Full Time’ : ‘<span class="pulse" style="color:#ff1744;font-size:0.7rem">● LIVE</span>’;
+var scoreDisplay = ‘<div style="font-family:\'Playfair Display\',serif;font-size:3rem;font-weight:900;color:#c9a84c;text-align:center" id="live-score">’+state.score.h+’ - ‘+state.score.a+’</div>’;
+var statusLabel = state.fin ? ‘Full Time’ : ‘<span class="pulse" style="color:#ff1744;font-size:0.7rem">* LIVE</span>’;
 matchArea = ‘<div style="background:#0c1018;border:1px solid #181e28;padding:18px 20px;margin-bottom:8px;text-align:center">’
 +’<div style="font-family:\'DM Sans\',sans-serif;font-size:0.6rem;color:#555;margin-bottom:4px">’+statusLabel+’</div>’
 +scoreDisplay
@@ -875,7 +875,7 @@ matchArea = ‘<div style="background:#0c1018;border:1px solid #181e28;padding:1
 var histRows = state.hist.length ? state.hist.map(function(h) {
 return ‘<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 10px;border-bottom:1px solid #0d1117;font-family:\'DM Sans\',sans-serif;font-size:0.7rem">’
 +’<span style="color:#888">’+esc(h.home)+’</span>’
-+’<span style="color:#c9a84c;font-weight:700">’+h.hG+’ – ‘+h.aG+’</span>’
++’<span style="color:#c9a84c;font-weight:700">’+h.hG+’ - ‘+h.aG+’</span>’
 +’<span style="color:#888">’+esc(h.away)+’</span>’
 +’</div>’;
 }).join(’’) : ‘’;
@@ -905,7 +905,7 @@ return ‘<div style="background:#0c1018;border:1px solid #181e28;padding:10px">
 +’</div>’;
 }
 
-// ─── MONTE CARLO TAB ──────────────────────────────────────────────────────────
+// — MONTE CARLO TAB –––––––––––––––––––––––––––––
 function doMC() {
 setState({ mcr:true, mc:null });
 setTimeout(function() {
@@ -942,7 +942,7 @@ return ‘<div style="background:#0c1018;border:1px solid #181e28;padding:14px 1
 +’<div style="font-family:\'DM Sans\',sans-serif;font-size:0.72rem;font-weight:600;margin-bottom:2px">’+t.name+’</div>’
 +’<div style="font-family:\'Playfair Display\',serif;font-size:1.6rem;font-weight:900;color:'+t.color+'">’+pct+’%</div>’
 +’<div style="height:3px;background:#1a1e24;border-radius:2px;margin-top:6px"><div style="width:'+Math.round(bar)+'%;height:100%;background:'+t.color+';border-radius:2px"></div></div>’
-+’<div style="font-family:\'DM Sans\',sans-serif;font-size:0.56rem;color:#444;margin-top:4px">Avg: ‘+mc.avg[t.abbr]+’ pts · Range: ‘+mc.mn[t.abbr]+’–’+mc.mx[t.abbr]+’</div>’
++’<div style="font-family:\'DM Sans\',sans-serif;font-size:0.56rem;color:#444;margin-top:4px">Avg: ‘+mc.avg[t.abbr]+’ pts . Range: ‘+mc.mn[t.abbr]+’-’+mc.mx[t.abbr]+’</div>’
 +’</div>’;
 }).join(’’);
 
@@ -971,7 +971,7 @@ var mxPct  = (mc.mx[t.abbr]/ptsMax)*100;
 return ‘<div style="margin-bottom:8px">’
 +’<div style="display:flex;justify-content:space-between;margin-bottom:3px">’
 +’<div style="font-family:\'DM Sans\',sans-serif;font-size:0.7rem;font-weight:600;color:'+t.color+'">’+t.name+’</div>’
-+’<div style="font-family:\'DM Sans\',sans-serif;font-size:0.65rem;color:#888">’+mc.mn[t.abbr]+’ – <span style="color:#c9a84c">’+mc.avg[t.abbr]+’</span> – ‘+mc.mx[t.abbr]+’</div>’
++’<div style="font-family:\'DM Sans\',sans-serif;font-size:0.65rem;color:#888">’+mc.mn[t.abbr]+’ - <span style="color:#c9a84c">’+mc.avg[t.abbr]+’</span> - ‘+mc.mx[t.abbr]+’</div>’
 +’</div>’
 +’<div style="position:relative;height:6px;background:#1a1e24;border-radius:3px">’
 +’<div style="position:absolute;left:'+Math.round(mnPct)+'%;width:'+Math.round(mxPct-mnPct)+'%;height:100%;background:'+t.color+'33;border-radius:3px"></div>’
@@ -993,7 +993,7 @@ return ‘<div>’
 +’</div>’
 
 ```
-// ── Model Comparison ──
+// -- Model Comparison --
 +renderModelComparison(mc)
 
 +'</div>';
@@ -1008,9 +1008,9 @@ var ourNap = ((mc.titles.NAP / mc.n) * 100).toFixed(0);
 var ourCom = ((mc.titles.COM / mc.n) * 100).toFixed(0);
 
 var benchmarks = [
-{ src:“Our Model”,    note:“1,000 sims · xG + form + PPDA + H2H fixed”, INT:ourInt, ACM:ourAcm, NAP:ourNap, COM:ourCom, live:true  },
-{ src:“Opta Analyst”, note:“Post-MD30 · xPTS: INT 84.9 / ACM 77.5 / NAP 76.8 / COM 70.0”, INT:“89.3”, ACM:“6.0”, NAP:“4.0”, COM:“~1”, live:false },
-{ src:“StatsUltra”,   note:“Post-MD30 · 15k daily sims · xG ratings”, INT:“92.0”, ACM:“4.0”, NAP:“4.0”, COM:“~0”, live:false },
+{ src:“Our Model”,    note:“1,000 sims . xG + form + PPDA + H2H fixed”, INT:ourInt, ACM:ourAcm, NAP:ourNap, COM:ourCom, live:true  },
+{ src:“Opta Analyst”, note:“Post-MD30 . xPTS: INT 84.9 / ACM 77.5 / NAP 76.8 / COM 70.0”, INT:“89.3”, ACM:“6.0”, NAP:“4.0”, COM:“~1”, live:false },
+{ src:“StatsUltra”,   note:“Post-MD30 . 15k daily sims . xG ratings”, INT:“92.0”, ACM:“4.0”, NAP:“4.0”, COM:“~0”, live:false },
 ];
 var cols   = [”#2255aa”,”#d40000”,”#0e9aff”,”#8855cc”];
 var names  = [“INT”,“ACM”,“NAP”,“COM”];
@@ -1053,7 +1053,7 @@ return ‘<div style="margin-bottom:10px">’
 +’<span style="font-family:-apple-system,sans-serif;font-size:0.7rem;font-weight:600">’+t.name+’</span>’
 +’<span style="font-family:-apple-system,sans-serif;font-size:0.65rem;color:#666">’
 +‘now <span style="color:#e0d8cc">’+t.actual+’</span>’
-+’ → projected <span style="color:'+t.color+';font-weight:600">’+t.projected+’</span>’
++’ -> projected <span style="color:'+t.color+';font-weight:600">’+t.projected+’</span>’
 +’ <span style="color:#555">(+’+toGet+’ to get)</span>’
 +’</span></div>’
 +’<div style="position:relative;height:8px;background:#1a1e24;border-radius:2px">’
@@ -1063,7 +1063,7 @@ return ‘<div style="margin-bottom:10px">’
 }).join(’’);
 
 return ‘<div style="background:#0c1018;border:1px solid #181e28;padding:14px 16px;margin-top:12px;border-top:2px solid #1a1e24">’
-+’<div style="font-family:-apple-system,sans-serif;font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:#555;margin-bottom:4px">Model Comparison — MD31</div>’
++’<div style="font-family:-apple-system,sans-serif;font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:#555;margin-bottom:4px">Model Comparison - MD31</div>’
 +’<div style="font-family:-apple-system,sans-serif;font-size:0.62rem;color:#444;margin-bottom:14px;line-height:1.5">’
 +‘Opta Analyst (post-MD30) and StatsUltra title probabilities vs our 1,000-scenario engine.</div>’
 +’<div style="display:grid;grid-template-columns:120px repeat(4,1fr);gap:2px;margin-bottom:4px">’
@@ -1079,11 +1079,11 @@ return ‘<div style="background:#0c1018;border:1px solid #181e28;padding:14px 1
 +’<div style="margin-top:12px;padding:10px 12px;background:#0e1318">’
 +’<div style="font-family:-apple-system,sans-serif;font-size:0.56rem;letter-spacing:0.12em;text-transform:uppercase;color:#555;margin-bottom:10px">Opta Projected Final Points</div>’
 +optaBars
-+’<div style="font-family:-apple-system,sans-serif;font-size:0.58rem;color:#444;margin-top:4px">Solid bar = current · Faded = Opta projected finish</div>’
++’<div style="font-family:-apple-system,sans-serif;font-size:0.58rem;color:#444;margin-top:4px">Solid bar = current . Faded = Opta projected finish</div>’
 +’</div></div>’;
 }
 
-// ─── MAIN RENDER ─────────────────────────────────────────────────────────────
+// — MAIN RENDER ———————————————————––
 function render() {
 var TABS = [
 [‘runin’,     ‘📅 Run-In’],
@@ -1111,7 +1111,7 @@ document.getElementById(‘root’).innerHTML =
 +’<div style="max-width:980px;margin:0 auto">’
 +’<div style="display:flex;align-items:baseline;gap:12px;margin-bottom:14px">’
 +’<h1 style="font-family:\'Playfair Display\',serif;font-size:1.8rem;font-weight:900;background:linear-gradient(135deg,#c9a84c,#e8d08a);-webkit-background-clip:text;-webkit-text-fill-color:transparent">CALCIO SIM</h1>’
-+’<span style="font-family:\'DM Sans\',sans-serif;font-size:0.58rem;color:#444;letter-spacing:0.18em;text-transform:uppercase">Serie A 2025/26 · Title Race · MD31</span>’
++’<span style="font-family:\'DM Sans\',sans-serif;font-size:0.58rem;color:#444;letter-spacing:0.18em;text-transform:uppercase">Serie A 2025/26 . Title Race . MD31</span>’
 +’</div>’
 +’<div style="display:flex;border-bottom:1px solid #151b25;overflow-x:auto">’+tabBtns+’</div>’
 +’</div></div>’
