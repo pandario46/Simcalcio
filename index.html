@@ -934,7 +934,7 @@ document.getElementById(‘root’).innerHTML=
 +’<div style="background:#0e1520;border-bottom:1px solid #151b25;padding:18px 24px 0">’
 +’<div style="max-width:980px;margin:0 auto">’
 +’<div style="display:flex;align-items:baseline;gap:12px;margin-bottom:14px">’
-+’<h1 style="font-family:Georgia,serif;font-size:1.8rem;font-weight:900;background:linear-gradient(135deg,#c9a84c,#e8d08a);-webkit-background-clip:text;-webkit-text-fill-color:transparent">CALCIO SIM</h1>’
++’<h1 style="font-family:Georgia,serif;font-size:1.8rem;font-weight:900;color:#c9a84c">CALCIO SIM</h1>’
 +’<span style="font-size:0.58rem;color:#444;letter-spacing:0.18em;text-transform:uppercase">Serie A 2025/26 - MD31</span>’
 +’</div>’
 +’<div style="display:flex;border-bottom:1px solid #151b25;overflow-x:auto">’+tabBtns+’</div>’
@@ -970,7 +970,20 @@ render();
 }
 });
 
+window.addEventListener(‘DOMContentLoaded’, function() {
+try {
 render();
+} catch(e) {
+var root = document.getElementById(‘root’);
+if (root) {
+root.style.background = ‘#07090d’;
+root.style.color = ‘#ff1744’;
+root.style.padding = ‘20px’;
+root.style.fontFamily = ‘monospace’;
+root.innerHTML = ‘<h2>Error</h2><pre>’ + e.message + ‘\n’ + (e.stack||’’) + ‘</pre>’;
+}
+}
+});
 
   </script>
 </body>
