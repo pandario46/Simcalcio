@@ -1,11 +1,12 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Calcio Sim - Serie A 2025/26</title>
   <style>
-    *{box-sizing:border-box;margin:0;padding:0}
+*{box-sizing:border-box;margin:0;padding:0}
     body{background:#07090d;color:#e0d8cc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
     ::-webkit-scrollbar{width:3px}::-webkit-scrollbar-thumb{background:#c9a84c}
     .T{background:none;border:none;cursor:pointer;font-size:0.64rem;letter-spacing:0.12em;text-transform:uppercase;padding:10px 14px;color:#555;border-bottom:2px solid transparent;transition:all 0.2s;white-space:nowrap}
@@ -21,976 +22,1126 @@
 <body>
   <div id="root"></div>
   <script>
- 
-var ADV = {
-  INT: { xG:2.11, xGA:0.81, shots:18.2, overperf:6.4,  xPTS:57.72, str:83.2, ppda:8.8,  block:"Medium Press", bk:"medium" },
-  NAP: { xG:1.55, xGA:1.03, shots:13.0, overperf:-0.1, xPTS:48.5,  str:76,   ppda:7.4,  block:"High Press",   bk:"high"   },
-  ACM: { xG:1.73, xGA:0.83, shots:13.7, overperf:0.2,  xPTS:53.2,  str:76,   ppda:14.5, block:"Low Block",    bk:"low"    },
-  COM: { xG:1.72, xGA:0.79, shots:14.3, overperf:3.0,  xPTS:51.8,  str:82,   ppda:9.3,  block:"Med Press",    bk:"medium" },
+
+var    ADV = {
+INT: { xG:2.11, xGA:0.81, shots:18.2, overperf:6.4,  xPTS:57.72, str:83.2, ppda:8.8,  block:“Medium Press”, bk:“medium” },
+NAP: { xG:1.55, xGA:1.03, shots:13.0, overperf:-0.1, xPTS:48.5,  str:76,   ppda:7.4,  block:“High Press”,   bk:“high”   },
+ACM: { xG:1.73, xGA:0.83, shots:13.7, overperf:0.2,  xPTS:53.2,  str:76,   ppda:14.5, block:“Low Block”,    bk:“low”    },
+COM: { xG:1.72, xGA:0.79, shots:14.3, overperf:3.0,  xPTS:51.8,  str:82,   ppda:9.3,  block:“Med Press”,    bk:“medium” },
 };
- 
-var TDATA = {
-  INT: { ppda:8.8,  bk:"medium", block:"Medium Press",  group:2 },
-  NAP: { ppda:7.4,  bk:"high",   block:"High Press",    group:2 },
-  ACM: { ppda:14.5, bk:"low",    block:"Low Block",     group:4 },
-  COM: { ppda:9.3,  bk:"medium", block:"Med Press",     group:1 },
-  JUV: { ppda:10.0, bk:"medium", block:"Medium Block",  group:2 },
-  ROM: { ppda:9.6,  bk:"high",   block:"High Press",    group:1 },
-  ATA: { ppda:8.5,  bk:"high",   block:"High Press",    group:1 },
-  BOL: { ppda:9.1,  bk:"high",   block:"High Press",    group:1 },
-  LAZ: { ppda:15.5, bk:"low",    block:"Low Block",     group:4 },
-  UDI: { ppda:12.4, bk:"medium", block:"Hybrid",        group:5 },
-  SAS: { ppda:12.0, bk:"medium", block:"Hybrid",        group:5 },
-  PAR: { ppda:16.1, bk:"low",    block:"Low Block",     group:4 },
-  GEN: { ppda:10.4, bk:"medium", block:"Medium Block",  group:2 },
-  TOR: { ppda:13.5, bk:"low",    block:"Low Block",     group:4 },
-  CAG: { ppda:15.0, bk:"low",    block:"Low Block",     group:3 },
-  FIO: { ppda:11.5, bk:"medium", block:"Medium Block",  group:3 },
-  LEC: { ppda:12.2, bk:"medium", block:"Hybrid",        group:5 },
-  CRE: { ppda:13.8, bk:"low",    block:"Low Block",     group:4 },
-  PIS: { ppda:14.2, bk:"low",    block:"Low Block",     group:4 },
-  VER: { ppda:13.0, bk:"medium", block:"Med-Low Block", group:3 },
+
+// Full 20-team pressing profiles - Statsbomb Feb 2026 + Opta MD24 + tactical analysis
+// Groups per Statsbomb: (1) Systematic high press: Bologna, Como, Roma, Atalanta
+// (2) High in opp half, compact own: Genoa, Inter, Juventus, Napoli, Parma
+// (3) Space in build-up, aggressive own half: Cagliari, Fiorentina, Verona
+// (4) Reactive across pitch: Milan, Cremonese, Lazio, Pisa, Torino
+// (5) Hybrid: Lecce, Sassuolo, Udinese
+var    TDATA = {
+INT: { ppda:8.8,  bk:“medium”, block:“Medium Press”,  group:2 },
+NAP: { ppda:7.4,  bk:“high”,   block:“High Press”,    group:2 },
+ACM: { ppda:14.5, bk:“low”,    block:“Low Block”,     group:4 },
+COM: { ppda:9.3,  bk:“medium”, block:“Med Press”,     group:1 },
+JUV: { ppda:10.0, bk:“medium”, block:“Medium Block”,  group:2 },
+ROM: { ppda:9.6,  bk:“high”,   block:“High Press”,    group:1 },
+ATA: { ppda:8.5,  bk:“high”,   block:“High Press”,    group:1 },
+BOL: { ppda:9.1,  bk:“high”,   block:“High Press”,    group:1 },
+LAZ: { ppda:15.5, bk:“low”,    block:“Low Block”,     group:4 },
+UDI: { ppda:12.4, bk:“medium”, block:“Hybrid”,        group:5 },
+SAS: { ppda:12.0, bk:“medium”, block:“Hybrid”,        group:5 },
+PAR: { ppda:16.1, bk:“low”,    block:“Low Block”,     group:4 },
+GEN: { ppda:10.4, bk:“medium”, block:“Medium Block”,  group:2 },
+TOR: { ppda:13.5, bk:“low”,    block:“Low Block”,     group:4 },
+CAG: { ppda:15.0, bk:“low”,    block:“Low Block”,     group:3 },
+FIO: { ppda:11.5, bk:“medium”, block:“Medium Block”,  group:3 },
+LEC: { ppda:12.2, bk:“medium”, block:“Hybrid”,        group:5 },
+CRE: { ppda:13.8, bk:“low”,    block:“Low Block”,     group:4 },
+PIS: { ppda:14.2, bk:“low”,    block:“Low Block”,     group:4 },
+VER: { ppda:13.0, bk:“medium”, block:“Med-Low Block”, group:3 },
 };
- 
-var OPP = {
-  FIO:58, ROM:75, CAG:42, TOR:44, PAR:46, SAS:52, VER:28, BOL:70,
-  JUV:80, ATA:75, LAZ:67, CRE:35, PIS:22, UDI:48, GEN:46, LEC:38,
-  NAP:76, ACM:76, INT:83, COM:82,
+
+var    OPP = {
+FIO:58, ROM:75, CAG:42, TOR:44, PAR:46, SAS:52, VER:28, BOL:70,
+JUV:80, ATA:75, LAZ:67, CRE:35, PIS:22, UDI:48, GEN:46, LEC:38,
+NAP:76, ACM:76, INT:83, COM:82,
 };
- 
-var TEAMS = [
-  { name:"Inter Milano",  abbr:"INT", rank:1,  pts:69, w:22, d:3,  l:5,  color:"#2255aa", form:["W","W","L","D","D"] },
-  { name:"SSC Napoli",    abbr:"NAP", rank:2,  pts:62, w:19, d:5,  l:7,  color:"#0e9aff", form:["W","W","W","D","L"] },
-  { name:"AC Milan",      abbr:"ACM", rank:3,  pts:63, w:18, d:9,  l:3,  color:"#d40000", form:["W","L","W","D","W"] },
-  { name:"Como 1907",     abbr:"COM", rank:4,  pts:57, w:16, d:9,  l:5,  color:"#8855cc", form:["W","D","W","L","W"] },
-  { name:"Juventus",      abbr:"JUV", rank:5,  pts:54, w:16, d:8,  l:6,  color:"#aaa",    form:["W","D","W","W","W"] },
-  { name:"AS Roma",       abbr:"ROM", rank:6,  pts:54, w:17, d:3,  l:10, color:"#c8a000", form:["L","W","W","L","W"] },
-  { name:"Atalanta",      abbr:"ATA", rank:7,  pts:47, w:12, d:11, l:6,  color:"#003399", form:["W","D","W","D","D"] },
-  { name:"Bologna",       abbr:"BOL", rank:8,  pts:42, w:12, d:6,  l:11, color:"#cc0000", form:["W","W","L","D","W"] },
-  { name:"Lazio",         abbr:"LAZ", rank:9,  pts:40, w:10, d:10, l:9,  color:"#88ccee", form:["W","D","L","D","W"] },
-  { name:"Udinese",       abbr:"UDI", rank:10, pts:39, w:11, d:6,  l:13, color:"#888",    form:["W","L","W","L","D"] },
-  { name:"Sassuolo",      abbr:"SAS", rank:11, pts:38, w:11, d:5,  l:13, color:"#008800", form:["L","D","W","L","L"] },
-  { name:"Parma",         abbr:"PAR", rank:12, pts:34, w:8,  d:10, l:11, color:"#ddcc00", form:["D","L","W","D","L"] },
-  { name:"Genoa",         abbr:"GEN", rank:13, pts:33, w:8,  d:9,  l:13, color:"#bb0000", form:["W","L","D","L","L"] },
-  { name:"Torino",        abbr:"TOR", rank:14, pts:33, w:9,  d:6,  l:14, color:"#883300", form:["L","D","L","W","L"] },
-  { name:"Cagliari",      abbr:"CAG", rank:15, pts:30, w:7,  d:9,  l:14, color:"#990000", form:["L","L","D","W","D"] },
-  { name:"Fiorentina",    abbr:"FIO", rank:16, pts:28, w:6,  d:10, l:13, color:"#7700aa", form:["W","L","D","L","D"] },
-  { name:"Lecce",         abbr:"LEC", rank:17, pts:27, w:7,  d:6,  l:16, color:"#cc0000", form:["L","D","L","L","W"] },
-  { name:"Cremonese",     abbr:"CRE", rank:18, pts:24, w:5,  d:9,  l:15, color:"#c8a000", form:["L","L","D","L","D"] },
-  { name:"Pisa SC",       abbr:"PIS", rank:19, pts:18, w:2,  d:12, l:15, color:"#000099", form:["W","D","D","L","D"] },
-  { name:"Hellas Verona", abbr:"VER", rank:20, pts:18, w:3,  d:9,  l:17, color:"#002299", form:["L","L","L","D","L"] },
+
+var    TEAMS = [
+{ name:“Inter Milano”,  abbr:“INT”, rank:1,  pts:69, w:22, d:3,  l:5,  color:”#2255aa”, form:[“W”,“W”,“L”,“D”,“D”] },
+{ name:“SSC Napoli”,    abbr:“NAP”, rank:2,  pts:62, w:19, d:5,  l:7,  color:”#0e9aff”, form:[“W”,“W”,“W”,“D”,“L”] },
+{ name:“AC Milan”,      abbr:“ACM”, rank:3,  pts:63, w:18, d:9,  l:3,  color:”#d40000”, form:[“W”,“L”,“W”,“D”,“W”] },
+{ name:“Como 1907”,     abbr:“COM”, rank:4,  pts:57, w:16, d:9,  l:5,  color:”#8855cc”, form:[“W”,“D”,“W”,“L”,“W”] },
+{ name:“Juventus”,      abbr:“JUV”, rank:5,  pts:54, w:16, d:8,  l:6,  color:”#aaa”,    form:[“W”,“D”,“W”,“W”,“W”] },
+{ name:“AS Roma”,       abbr:“ROM”, rank:6,  pts:54, w:17, d:3,  l:10, color:”#c8a000”, form:[“L”,“W”,“W”,“L”,“W”] },
+{ name:“Atalanta”,      abbr:“ATA”, rank:7,  pts:47, w:12, d:11, l:6,  color:”#003399”, form:[“W”,“D”,“W”,“D”,“D”] },
+{ name:“Bologna”,       abbr:“BOL”, rank:8,  pts:42, w:12, d:6,  l:11, color:”#cc0000”, form:[“W”,“W”,“L”,“D”,“W”] },
+{ name:“Lazio”,         abbr:“LAZ”, rank:9,  pts:40, w:10, d:10, l:9,  color:”#88ccee”, form:[“W”,“D”,“L”,“D”,“W”] },
+{ name:“Udinese”,       abbr:“UDI”, rank:10, pts:39, w:11, d:6,  l:13, color:”#888”,    form:[“W”,“L”,“W”,“L”,“D”] },
+{ name:“Sassuolo”,      abbr:“SAS”, rank:11, pts:38, w:11, d:5,  l:13, color:”#008800”, form:[“L”,“D”,“W”,“L”,“L”] },
+{ name:“Parma”,         abbr:“PAR”, rank:12, pts:34, w:8,  d:10, l:11, color:”#ddcc00”, form:[“D”,“L”,“W”,“D”,“L”] },
+{ name:“Genoa”,         abbr:“GEN”, rank:13, pts:33, w:8,  d:9,  l:13, color:”#bb0000”, form:[“W”,“L”,“D”,“L”,“L”] },
+{ name:“Torino”,        abbr:“TOR”, rank:14, pts:33, w:9,  d:6,  l:14, color:”#883300”, form:[“L”,“D”,“L”,“W”,“L”] },
+{ name:“Cagliari”,      abbr:“CAG”, rank:15, pts:30, w:7,  d:9,  l:14, color:”#990000”, form:[“L”,“L”,“D”,“W”,“D”] },
+{ name:“Fiorentina”,    abbr:“FIO”, rank:16, pts:28, w:6,  d:10, l:13, color:”#7700aa”, form:[“W”,“L”,“D”,“L”,“D”] },
+{ name:“Lecce”,         abbr:“LEC”, rank:17, pts:27, w:7,  d:6,  l:16, color:”#cc0000”, form:[“L”,“D”,“L”,“L”,“W”] },
+{ name:“Cremonese”,     abbr:“CRE”, rank:18, pts:24, w:5,  d:9,  l:15, color:”#c8a000”, form:[“L”,“L”,“D”,“L”,“D”] },
+{ name:“Pisa SC”,       abbr:“PIS”, rank:19, pts:18, w:2,  d:12, l:15, color:”#000099”, form:[“W”,“D”,“D”,“L”,“D”] },
+{ name:“Hellas Verona”, abbr:“VER”, rank:20, pts:18, w:3,  d:9,  l:17, color:”#002299”, form:[“L”,“L”,“L”,“D”,“L”] },
 ];
- 
-var TOP4 = TEAMS.slice(0, 4);
-var TOP6 = TEAMS.slice(0, 6);
- 
-var FX = {
-  INT: [
-    { md:31, date:"5 Apr",  h:true,  opp:"Roma",     oppAbbr:"ROM" },
-    { md:32, date:"12 Apr", h:false, opp:"Como",     oppAbbr:"COM", big:true },
-    { md:33, date:"17 Apr", h:true,  opp:"Cagliari", oppAbbr:"CAG" },
-    { md:34, date:"26 Apr", h:false, opp:"Torino",   oppAbbr:"TOR" },
-    { md:35, date:"3 May",  h:true,  opp:"Parma",    oppAbbr:"PAR" },
-    { md:36, date:"10 May", h:false, opp:"Lazio",    oppAbbr:"LAZ" },
-    { md:37, date:"17 May", h:true,  opp:"Verona",   oppAbbr:"VER" },
-    { md:38, date:"24 May", h:false, opp:"Bologna",  oppAbbr:"BOL" },
-  ],
-  NAP: [
-    { md:31, date:"6 Apr",  h:true,  opp:"AC Milan",  oppAbbr:"ACM", big:true },
-    { md:32, date:"12 Apr", h:false, opp:"Parma",     oppAbbr:"PAR" },
-    { md:33, date:"18 Apr", h:true,  opp:"Lazio",     oppAbbr:"LAZ" },
-    { md:34, date:"26 Apr", h:true,  opp:"Cremonese", oppAbbr:"CRE" },
-    { md:35, date:"3 May",  h:false, opp:"Como",      oppAbbr:"COM", big:true },
-    { md:36, date:"10 May", h:true,  opp:"Bologna",   oppAbbr:"BOL" },
-    { md:37, date:"17 May", h:false, opp:"Pisa",      oppAbbr:"PIS" },
-    { md:38, date:"24 May", h:true,  opp:"Udinese",   oppAbbr:"UDI" },
-  ],
-  ACM: [
-    { md:31, date:"6 Apr",  h:false, opp:"Napoli",   oppAbbr:"NAP", big:true },
-    { md:32, date:"11 Apr", h:true,  opp:"Udinese",  oppAbbr:"UDI" },
-    { md:33, date:"19 Apr", h:false, opp:"Verona",   oppAbbr:"VER" },
-    { md:34, date:"26 Apr", h:true,  opp:"Juventus", oppAbbr:"JUV", big:true },
-    { md:35, date:"3 May",  h:false, opp:"Sassuolo", oppAbbr:"SAS" },
-    { md:36, date:"10 May", h:true,  opp:"Atalanta", oppAbbr:"ATA" },
-    { md:37, date:"17 May", h:false, opp:"Genoa",    oppAbbr:"GEN" },
-    { md:38, date:"24 May", h:true,  opp:"Cagliari", oppAbbr:"CAG" },
-  ],
-  COM: [
-    { md:31, date:"5 Apr",  h:false, opp:"Fiorentina", oppAbbr:"FIO" },
-    { md:32, date:"12 Apr", h:true,  opp:"Inter",      oppAbbr:"INT", big:true },
-    { md:33, date:"17 Apr", h:false, opp:"Sassuolo",   oppAbbr:"SAS" },
-    { md:34, date:"26 Apr", h:false, opp:"Genoa",      oppAbbr:"GEN" },
-    { md:35, date:"3 May",  h:true,  opp:"Napoli",     oppAbbr:"NAP", big:true },
-    { md:36, date:"10 May", h:false, opp:"Lecce",      oppAbbr:"LEC" },
-    { md:37, date:"17 May", h:true,  opp:"Atalanta",   oppAbbr:"ATA" },
-    { md:38, date:"24 May", h:false, opp:"Roma",       oppAbbr:"ROM" },
-  ],
-  JUV: [
-    { md:31, date:"5 Apr",  h:true,  opp:"Genoa",      oppAbbr:"GEN" },
-    { md:32, date:"12 Apr", h:false, opp:"Atalanta",   oppAbbr:"ATA" },
-    { md:33, date:"19 Apr", h:true,  opp:"Bologna",    oppAbbr:"BOL" },
-    { md:34, date:"26 Apr", h:false, opp:"Milan",      oppAbbr:"ACM", big:true },
-    { md:35, date:"3 May",  h:true,  opp:"Verona",     oppAbbr:"VER" },
-    { md:36, date:"10 May", h:false, opp:"Lecce",      oppAbbr:"LEC" },
-    { md:37, date:"17 May", h:true,  opp:"Fiorentina", oppAbbr:"FIO" },
-    { md:38, date:"24 May", h:false, opp:"Torino",     oppAbbr:"TOR" },
-  ],
-  ROM: [
-    { md:31, date:"5 Apr",  h:false, opp:"Inter",      oppAbbr:"INT" },
-    { md:32, date:"12 Apr", h:true,  opp:"Pisa",       oppAbbr:"PIS" },
-    { md:33, date:"19 Apr", h:true,  opp:"Atalanta",   oppAbbr:"ATA" },
-    { md:34, date:"26 Apr", h:false, opp:"Bologna",    oppAbbr:"BOL" },
-    { md:35, date:"3 May",  h:true,  opp:"Fiorentina", oppAbbr:"FIO" },
-    { md:36, date:"10 May", h:false, opp:"Parma",      oppAbbr:"PAR" },
-    { md:37, date:"17 May", h:true,  opp:"Lazio",      oppAbbr:"LAZ", big:true },
-    { md:38, date:"24 May", h:false, opp:"Verona",     oppAbbr:"VER" },
-  ],
+
+var    TOP4 = TEAMS.slice(0, 4);
+var    TOP6 = TEAMS.slice(0, 6);
+
+var    FX = {
+INT: [
+{ md:31, date:“5 Apr”,  h:true,  opp:“Roma”,       oppAbbr:“ROM” },
+{ md:32, date:“12 Apr”, h:false, opp:“Como”,       oppAbbr:“COM”, big:true },
+{ md:33, date:“17 Apr”, h:true,  opp:“Cagliari”,   oppAbbr:“CAG” },
+{ md:34, date:“26 Apr”, h:false, opp:“Torino”,     oppAbbr:“TOR” },
+{ md:35, date:“3 May”,  h:true,  opp:“Parma”,      oppAbbr:“PAR” },
+{ md:36, date:“10 May”, h:false, opp:“Lazio”,      oppAbbr:“LAZ” },
+{ md:37, date:“17 May”, h:true,  opp:“Verona”,     oppAbbr:“VER” },
+{ md:38, date:“24 May”, h:false, opp:“Bologna”,    oppAbbr:“BOL” },
+],
+NAP: [
+{ md:31, date:“6 Apr”,  h:true,  opp:“AC Milan”,  oppAbbr:“ACM”, big:true },
+{ md:32, date:“12 Apr”, h:false, opp:“Parma”,     oppAbbr:“PAR” },
+{ md:33, date:“18 Apr”, h:true,  opp:“Lazio”,     oppAbbr:“LAZ” },
+{ md:34, date:“26 Apr”, h:true,  opp:“Cremonese”, oppAbbr:“CRE” },
+{ md:35, date:“3 May”,  h:false, opp:“Como”,      oppAbbr:“COM”, big:true },
+{ md:36, date:“10 May”, h:true,  opp:“Bologna”,   oppAbbr:“BOL” },
+{ md:37, date:“17 May”, h:false, opp:“Pisa”,      oppAbbr:“PIS” },
+{ md:38, date:“24 May”, h:true,  opp:“Udinese”,   oppAbbr:“UDI” },
+],
+ACM: [
+{ md:31, date:“6 Apr”,  h:false, opp:“Napoli”,   oppAbbr:“NAP”, big:true },
+{ md:32, date:“11 Apr”, h:true,  opp:“Udinese”,  oppAbbr:“UDI” },
+{ md:33, date:“19 Apr”, h:false, opp:“Verona”,   oppAbbr:“VER” },
+{ md:34, date:“26 Apr”, h:true,  opp:“Juventus”, oppAbbr:“JUV”, big:true },
+{ md:35, date:“3 May”,  h:false, opp:“Sassuolo”, oppAbbr:“SAS” },
+{ md:36, date:“10 May”, h:true,  opp:“Atalanta”, oppAbbr:“ATA” },
+{ md:37, date:“17 May”, h:false, opp:“Genoa”,    oppAbbr:“GEN” },
+{ md:38, date:“24 May”, h:true,  opp:“Cagliari”, oppAbbr:“CAG” },
+],
+COM: [
+{ md:31, date:“5 Apr”,  h:false, opp:“Fiorentina”, oppAbbr:“FIO” },
+{ md:32, date:“12 Apr”, h:true,  opp:“Inter”,      oppAbbr:“INT”, big:true },
+{ md:33, date:“17 Apr”, h:false, opp:“Sassuolo”,   oppAbbr:“SAS” },
+{ md:34, date:“26 Apr”, h:false, opp:“Genoa”,      oppAbbr:“GEN” },
+{ md:35, date:“3 May”,  h:true,  opp:“Napoli”,     oppAbbr:“NAP”, big:true },
+{ md:36, date:“10 May”, h:false, opp:“Lecce”,      oppAbbr:“LEC” },
+{ md:37, date:“17 May”, h:true,  opp:“Atalanta”,   oppAbbr:“ATA” },
+{ md:38, date:“24 May”, h:false, opp:“Roma”,       oppAbbr:“ROM” },
+],
+JUV: [
+{ md:31, date:“5 Apr”,  h:true,  opp:“Genoa”,      oppAbbr:“GEN” },
+{ md:32, date:“12 Apr”, h:false, opp:“Atalanta”,   oppAbbr:“ATA” },
+{ md:33, date:“19 Apr”, h:true,  opp:“Bologna”,    oppAbbr:“BOL” },
+{ md:34, date:“26 Apr”, h:false, opp:“Milan”,      oppAbbr:“ACM”, big:true },
+{ md:35, date:“3 May”,  h:true,  opp:“Verona”,     oppAbbr:“VER” },
+{ md:36, date:“10 May”, h:false, opp:“Lecce”,      oppAbbr:“LEC” },
+{ md:37, date:“17 May”, h:true,  opp:“Fiorentina”, oppAbbr:“FIO” },
+{ md:38, date:“24 May”, h:false, opp:“Torino”,     oppAbbr:“TOR” },
+],
+ROM: [
+{ md:31, date:“5 Apr”,  h:false, opp:“Inter”,      oppAbbr:“INT” },
+{ md:32, date:“12 Apr”, h:true,  opp:“Pisa”,       oppAbbr:“PIS” },
+{ md:33, date:“19 Apr”, h:true,  opp:“Atalanta”,   oppAbbr:“ATA” },
+{ md:34, date:“26 Apr”, h:false, opp:“Bologna”,    oppAbbr:“BOL” },
+{ md:35, date:“3 May”,  h:true,  opp:“Fiorentina”, oppAbbr:“FIO” },
+{ md:36, date:“10 May”, h:false, opp:“Parma”,      oppAbbr:“PAR” },
+{ md:37, date:“17 May”, h:true,  opp:“Lazio”,      oppAbbr:“LAZ”, big:true },
+{ md:38, date:“24 May”, h:false, opp:“Verona”,     oppAbbr:“VER” },
+],
 };
- 
-var PL = {
-  INT: ["Sommer","Acerbi","Bastoni","Bisseck","Barella","Calhanoglu","Sucic","Dimarco","Dumfries","Thuram","Esposito"],
-  NAP: ["Milinkovic-Savic","Juan Jesus","Buongiorno","Olivera","Politano","Gilmour","Lobotka","Spinazzola","De Bruyne","McTominay","Hojlund"],
-  ACM: ["Maignan","Tomori","De Winter","Pavlovic","Saelemaekers","Fofana","Modric","Rabiot","Bartesaghi","Pulisic","Leao"],
-  COM: ["Butez","Smolcic","Ramon","Kempf","Valle","Perrone","Da Cunha","Vojvoda","Nico Paz","Baturina","Douvikas"],
-  JUV: ["Perin","Kalulu","Bremer","Kelly","Cambiaso","Locatelli","Koopmeiners","Conceicao","McKennie","Boga","Yildiz"],
-  ROM: ["Svilar","Mancini","Hummels","Ndicka","Tsimikas","Cristante","Paredes","El Aynaoui","Baldanzi","Pellegrini","Shomurodov"],
-  ATA: ["Carnesecchi","Scalvini","Djimsiti","Kolasinac","Zappacosta","de Roon","Pasalic","Bernasconi","Samardzic","Zalewski","Scamacca"],
-  BOL: ["Ravaglia","Zortea","Vitik","Lucumi","Miranda","Sohm","Freuler","Orsolini","Odgaard","Cambiaghi","Castro"],
-  LAZ: ["Motta","Marusic","Gila","Provstgaard","Nuno Tavares","Dele-Bashiru","Patric","Taylor","Isaksen","Maldini","Castellanos"],
-  UDI: ["Okoye","Kristensen","Kabasele","Solet","Ehizibue","Ekkelenkamp","Karlstrom","Atta","Kamara","Zaniolo","Davis"],
-  SAS: ["Muric","Walukiewicz","Idzes","Muharemovic","Garcia","Thorstvedt","Matic","Kone","Berardi","Pinamonti","Lauriente"],
-  PAR: ["Suzuki","Circati","Troilo","Valenti","Britschgi","Ordonez","Keita","Sorensen","Valeri","Strefezza","Pellegrino"],
-  GEN: ["Bijlow","Marcandalli","Ostigaard","Vasquez","Norton-Cuffy","Frendrup","Malinovskyi","Messias","Ellertsson","Colombo","Vitinha"],
-  TOR: ["Paleari","Pedersen","Coco","Ismajli","Ebosse","Gineitis","Ilkhan","Vlasic","Obrador","Simeone","Adams"],
-  CAG: ["Caprile","Ze Pedro","Mina","Dossena","Palestra","Adopo","Gaetano","Sulemana","Zappa","Folorunsho","Esposito"],
-  FIO: ["De Gea","Dodo","Pongracic","Ranieri","Gosens","Mandragora","Cataldi","Adli","Colpani","Gudmundsson","Kean"],
-  LEC: ["Falcone","Guilbert","Baschirotto","Pelmard","Gallo","Ramadani","Coulibaly","Rafia","Dorgu","Pierotti","Krstovic"],
-  CRE: ["Audero","Terracciano","Folino","Luperto","Barbieri","Thorsby","Grassi","Maleh","Pezzella","Bonazzoli","Djuric"],
-  PIS: ["Nicolas","Albiol","Caracciolo","Canestrelli","Leris","Loyola","Hojholt","Angori","Moreo","Stojilkovic","Tramoni"],
-  VER: ["Montipo","Edmundsson","Nelsson","Valentini","Belghali","Akpa-Akpro","Gagliardini","Harroui","Frese","Bowie","Orban"],
+
+// GK is always index 0 - scorer selection uses slice(1) to exclude him
+var    PL = {
+INT: [“Sommer”,“Acerbi”,“Bastoni”,“Bisseck”,“Barella”,“Calhanoglu”,“Sucic”,“Dimarco”,“Dumfries”,“Thuram”,“Esposito”],
+NAP: [“Milinkovic-Savic”,“Juan Jesus”,“Buongiorno”,“Olivera”,“Politano”,“Gilmour”,“Lobotka”,“Spinazzola”,“De Bruyne”,“McTominay”,“Hojlund”],
+ACM: [“Maignan”,“Tomori”,“De Winter”,“Pavlovic”,“Saelemaekers”,“Fofana”,“Modric”,“Rabiot”,“Bartesaghi”,“Pulisic”,“Leao”],
+COM: [“Butez”,“Smolcic”,“Ramon”,“Kempf”,“Valle”,“Perrone”,“Da Cunha”,“Vojvoda”,“Nico Paz”,“Baturina”,“Douvikas”],
+JUV: [“Perin”,“Kalulu”,“Bremer”,“Kelly”,“Cambiaso”,“Locatelli”,“Koopmeiners”,“Conceicao”,“McKennie”,“Boga”,“Yildiz”],
+ROM: [“Svilar”,“Mancini”,“Hummels”,“Ndicka”,“Tsimikas”,“Cristante”,“Paredes”,“El Aynaoui”,“Baldanzi”,“Pellegrini”,“Shomurodov”],
+ATA: [“Carnesecchi”,“Scalvini”,“Djimsiti”,“Kolasinac”,“Zappacosta”,“de Roon”,“Pasalic”,“Bernasconi”,“Samardzic”,“Zalewski”,“Scamacca”],
+BOL: [“Ravaglia”,“Zortea”,“Vitik”,“Lucumi”,“Miranda”,“Sohm”,“Freuler”,“Orsolini”,“Odgaard”,“Cambiaghi”,“Castro”],
+LAZ: [“Motta”,“Marusic”,“Gila”,“Provstgaard”,“Nuno Tavares”,“Dele-Bashiru”,“Patric”,“Taylor”,“Isaksen”,“Maldini”,“Castellanos”],
+UDI: [“Okoye”,“Kristensen”,“Kabasele”,“Solet”,“Ehizibue”,“Ekkelenkamp”,“Karlstrom”,“Atta”,“Kamara”,“Zaniolo”,“Davis”],
+SAS: [“Muric”,“Walukiewicz”,“Idzes”,“Muharemovic”,“Garcia”,“Thorstvedt”,“Matic”,“Kone”,“Berardi”,“Pinamonti”,“Lauriente”],
+PAR: [“Suzuki”,“Circati”,“Troilo”,“Valenti”,“Britschgi”,“Ordonez”,“Keita”,“Sorensen”,“Valeri”,“Strefezza”,“Pellegrino”],
+GEN: [“Bijlow”,“Marcandalli”,“Ostigaard”,“Vasquez”,“Norton-Cuffy”,“Frendrup”,“Malinovskyi”,“Messias”,“Ellertsson”,“Colombo”,“Vitinha”],
+TOR: [“Paleari”,“Pedersen”,“Coco”,“Ismajli”,“Ebosse”,“Gineitis”,“Ilkhan”,“Vlasic”,“Obrador”,“Simeone”,“Adams”],
+CAG: [“Caprile”,“Ze Pedro”,“Mina”,“Dossena”,“Palestra”,“Adopo”,“Gaetano”,“Sulemana”,“Zappa”,“Folorunsho”,“Esposito”],
+FIO: [“De Gea”,“Dodo”,“Pongracic”,“Ranieri”,“Gosens”,“Mandragora”,“Cataldi”,“Adli”,“Colpani”,“Gudmundsson”,“Kean”],
+LEC: [“Falcone”,“Guilbert”,“Baschirotto”,“Pelmard”,“Gallo”,“Ramadani”,“Coulibaly”,“Rafia”,“Dorgu”,“Pierotti”,“Krstovic”],
+CRE: [“Audero”,“Terracciano”,“Folino”,“Luperto”,“Barbieri”,“Thorsby”,“Grassi”,“Maleh”,“Pezzella”,“Bonazzoli”,“Djuric”],
+PIS: [“Nicolas”,“Albiol”,“Caracciolo”,“Canestrelli”,“Leris”,“Loyola”,“Hojholt”,“Angori”,“Moreo”,“Stojilkovic”,“Tramoni”],
+VER: [“Montipo”,“Edmundsson”,“Nelsson”,“Valentini”,“Belghali”,“Akpa-Akpro”,“Gagliardini”,“Harroui”,“Frese”,“Bowie”,“Orban”],
 };
- 
-var CMTS = [
-  "Back of the net!", "GOOOAL!", "Unstoppable!", "Clinical finish!",
-  "Right place, right time!", "Buries it!", "World class!", "Counter-attack!", "Powerful header!", "Tapped home!",
+
+var    CMTS = [
+“Back of the net!”, “GOOOAL!”, “Unstoppable!”, “Clinical finish!”,
+“Right place, right time!”, “Buries it!”, “World class!”, “Counter-attack!”, “Powerful header!”, “Tapped home!”,
 ];
- 
-var BLOCK_MU = {
-  "high_vs_low":      { atk:4,  gm:0.85, label:"High press struggles vs deep block - counters likely" },
-  "high_vs_medium":   { atk:3,  gm:1.1,  label:"High press disrupts shape - energetic open game" },
-  "high_vs_high":     { atk:1,  gm:1.25, label:"Battle of presses - end-to-end, high xG expected" },
-  "medium_vs_high":   { atk:1,  gm:0.95, label:"Structured shape absorbs press well" },
-  "medium_vs_low":    { atk:2,  gm:1.0,  label:"Medium press overloads low block in transition" },
-  "medium_vs_medium": { atk:0,  gm:1.0,  label:"Balanced game - quality decides" },
-  "low_vs_high":      { atk:5,  gm:0.85, label:"Low block soaks press, lethal on counter - Milan's speciality" },
-  "low_vs_medium":    { atk:2,  gm:0.9,  label:"Deep shape exploits space on transitions" },
-  "low_vs_low":       { atk:-2, gm:0.7,  label:"Defensive chess - low scoring, set pieces crucial" },
+
+var    BLOCK_MU = {
+“high_vs_low”:     { atk:4,  gm:0.85, label:“High press struggles vs deep block - counters likely” },
+“high_vs_medium”:  { atk:3,  gm:1.1,  label:“High press disrupts shape - energetic open game” },
+“high_vs_high”:    { atk:1,  gm:1.25, label:“Battle of presses - end-to-end, high xG expected” },
+“medium_vs_high”:  { atk:1,  gm:0.95, label:“Structured shape absorbs press well” },
+“medium_vs_low”:   { atk:2,  gm:1.0,  label:“Medium press overloads low block in transition” },
+“medium_vs_medium”:{ atk:0,  gm:1.0,  label:“Balanced game - quality decides” },
+“low_vs_high”:     { atk:5,  gm:0.85, label:“Low block soaks press, lethal on counter - Milan’s speciality” },
+“low_vs_medium”:   { atk:2,  gm:0.9,  label:“Deep shape exploits space on transitions” },
+“low_vs_low”:      { atk:-2, gm:0.7,  label:“Defensive chess - low scoring, set pieces crucial” },
 };
- 
-// FIX #3: Extracted ROM_MD31_oppStrReduction out of INJURIES into its own variable
-var ROM_MD31_OPP_STR_REDUCTION = 16;
- 
-var INJURIES = {
-  INT: {
-    players: ["Lautaro (soleo, rientro fine marzo)", "Mkhitaryan (muscolare, rientro inizio aprile)"],
-    diffidati: ["Carlos Augusto", "Sucic"],
-    strPenalty: 8,
-    xGPenalty: 0.22,
-    outUntilMd: 32,
-  },
-  NAP: {
-    players: ["Di Lorenzo (ginocchio+piede, rientro metà aprile)", "Rrahmani (bicipite femorale, rientro fine aprile)", "Neres (caviglia, rientro metà aprile)", "Vergara (fascia plantare, rientro metà aprile)"],
-    diffidati: [],
-    strPenalty: 14,
-    xGPenalty: 0.1,
-    outUntilMd: 33,
-  },
-  ACM: {
-    players: ["Gabbia (ernia inguinale, rientro inizio aprile)", "Loftus-Cheek (mascella, rientro fine aprile)"],
-    diffidati: ["Athekame", "Fofana", "Modric", "Saelemaekers"],
-    strPenalty: 6,
-    xGPenalty: 0.05,
-    outUntilMd: 32,
-  },
-  COM: {
-    players: ["Addai (achille, stagione finita)"],
-    diffidati: ["Addai", "Da Cunha"],
-    strPenalty: 2,
-    xGPenalty: 0.0,
-    outUntilMd: 31,
-  },
+
+var    ACM_TOP6 = [
+{ opp:“Inter”,    h:false, res:“W”, score:“1-0”, md:29, note:“Low block stifles Chivu 3-5-2, Leao counter seals it” },
+{ opp:“Napoli”,   h:true,  res:“W”, score:“2-1”, md:6,  note:“Gimenez and Leao punish Conte’s high line” },
+{ opp:“Juventus”, h:false, res:“D”, score:“0-0”, md:7,  note:“Allegri shuts down old club, 4-4-2 mirror match” },
+{ opp:“Roma”,     h:true,  res:“W”, score:“1-0”, md:11, note:“Deep block, Pulisic counter-press goal” },
+{ opp:“Como”,     h:true,  res:“D”, score:“1-1”, md:20, note:“Leao equaliser, Fabregas system causes problems” },
+{ opp:“Atalanta”, h:false, res:“D”, score:“1-1”, md:10, note:“Reactive 4-4-2 handles Gasperini’s intensity” },
+];
+
+var    TEAM_DESC = {
+INT: “Chivu’s 3-5-2 with organised mid-block that triggers coordinated press in opponent half. Excellent defensive transitions. Akanji-Bastoni-Bisseck the league’s best defensive trio.”,
+NAP: “Conte’s geggenpress - man-oriented pressing in all zones. Forces turnovers high up the pitch but high defensive line is exposed vs direct play. McTominay and Anguissa the engine.”,
+ACM: “Allegri’s 4-4-2. Defend deep, stay compact, win ball fast in own half and launch Leao or Gimenez in behind. Serie A’s best record vs top-6 this season with W3 D3 L0.”,
+COM: “Fabregas positional play - medium press to win ball in the middle third. Fast transitions via Nico Paz and Diao. PPDA reflects controlled, structured defending not passivity.”,
 };
- 
+
+var    TEAM_STR = {
+INT: “Ball retention under pressure . Clinical counter-attack . Dominant set pieces”,
+NAP: “High turnover rate . Aggressive man-marking . Tireless engine room”,
+ACM: “Defensive solidity . Elite counter speed . W3 D3 L0 vs top-6”,
+COM: “Positional structure . Versatile transitions . League-best xGA”,
+};
+
+var    BC = { high:”#ff6d00”, medium:”#c9a84c”, low:”#69f0ae” };
+
+// Injuries per Goal.com 19 March 2026
+// MD31 dates: INT vs ROM = 5 Apr, NAP vs ACM = 6 Apr, COM vs FIO = 5 Apr
+var    INJURIES = {
+INT: {
+players: [“Lautaro (soleo, rientro fine marzo)”, “Mkhitaryan (muscolare, rientro inizio aprile)”],
+diffidati: [“Carlos Augusto”, “Sucic”],
+// Lautaro borderline for MD31 (fine marzo), Mkhitaryan likely back MD31
+// Bastoni NOT injured - fit
+strPenalty: 8,   // only Lautaro likely out MD31
+xGPenalty: 0.22, // losing Lautaro’s goals but Thuram starts
+outUntilMd: 32,
+},
+NAP: {
+players: [“Di Lorenzo (ginocchio+piede, rientro metà aprile)”, “Rrahmani (bicipite femorale, rientro fine aprile)”, “Neres (caviglia, rientro metà aprile)”, “Vergara (fascia plantare, rientro metà aprile)”],
+diffidati: [],
+// Di Lorenzo (captain/RB) AND Rrahmani (CB) both miss MD31 derby
+strPenalty: 14,  // losing two key defenders for the biggest game
+xGPenalty: 0.1,
+outUntilMd: 33,  // Di Lorenzo back ~mid April = MD33/34
+},
+ACM: {
+players: [“Gabbia (ernia inguinale, rientro inizio aprile)”, “Loftus-Cheek (mascella, rientro fine aprile)”],
+diffidati: [“Athekame”, “Fofana”, “Modric”, “Saelemaekers”],
+strPenalty: 6,   // Gabbia borderline MD31, Loftus-Cheek definitely out
+xGPenalty: 0.05,
+outUntilMd: 32,
+},
+COM: {
+players: [“Addai (achille, stagione finita)”],
+diffidati: [“Addai”, “Da Cunha”],
+strPenalty: 2,
+xGPenalty: 0.0,
+outUntilMd: 31, // no meaningful impact
+},
+// Roma hugely depleted for MD31 vs Inter - Dybala, Dovbyk, Soulé, Ferguson all out
+ROM_MD31_oppStrReduction: 16,
+};
+
+// — xG estimates: goals scored/conceded per game, 25% regression to league mean -
+// League mean 1.21/game (Serie A 2.42 total). Top-4 overridden by real Statsbomb xG.
 var GXG = {
-  INT: { xg:2.00, xga:0.88 },
-  NAP: { xg:1.48, xga:1.10 },
-  ACM: { xg:1.48, xga:0.83 },
-  COM: { xg:1.53, xga:0.85 },
-  JUV: { xg:1.68, xga:1.05 },
-  ROM: { xg:1.30, xga:0.90 },
-  ATA: { xg:1.35, xga:1.00 },
-  BOL: { xg:1.28, xga:1.20 },
-  LAZ: { xg:1.05, xga:1.05 },
-  UDI: { xg:1.18, xga:1.40 },
-  SAS: { xg:1.23, xga:1.30 },
-  PAR: { xg:1.10, xga:1.30 },
-  GEN: { xg:1.05, xga:1.25 },
-  TOR: { xg:1.20, xga:1.35 },
-  CAG: { xg:1.05, xga:1.30 },
-  FIO: { xg:1.00, xga:1.20 },
-  LEC: { xg:0.95, xga:1.40 },
-  CRE: { xg:1.00, xga:1.40 },
-  PIS: { xg:0.85, xga:1.35 },
-  VER: { xg:0.90, xga:1.60 },
+INT: { xg:2.00, xga:0.88 }, // overridden by ADV real xG in h2h
+NAP: { xg:1.48, xga:1.10 },
+ACM: { xg:1.48, xga:0.83 },
+COM: { xg:1.53, xga:0.85 },
+JUV: { xg:1.68, xga:1.05 },
+ROM: { xg:1.30, xga:0.90 },
+ATA: { xg:1.35, xga:1.00 },
+BOL: { xg:1.28, xga:1.20 },
+LAZ: { xg:1.05, xga:1.05 },
+UDI: { xg:1.18, xga:1.40 },
+SAS: { xg:1.23, xga:1.30 },
+PAR: { xg:1.10, xga:1.30 },
+GEN: { xg:1.05, xga:1.25 },
+TOR: { xg:1.20, xga:1.35 },
+CAG: { xg:1.05, xga:1.30 },
+FIO: { xg:1.00, xga:1.20 },
+LEC: { xg:0.95, xga:1.40 },
+CRE: { xg:1.00, xga:1.40 },
+PIS: { xg:0.85, xga:1.35 },
+VER: { xg:0.90, xga:1.60 },
 };
- 
-var TEAM_DESC = {
-  INT: "Chivu's 3-5-2 with organised mid-block that triggers coordinated press in opponent half. Excellent defensive transitions. Akanji-Bastoni-Bisseck the league's best defensive trio.",
-  NAP: "Conte's geggenpress - man-oriented pressing in all zones. Forces turnovers high up the pitch but high defensive line is exposed vs direct play. McTominay and Anguissa the engine.",
-  ACM: "Allegri's 4-4-2. Defend deep, stay compact, win ball fast in own half and launch Leao or Gimenez in behind. Serie A's best record vs top-6 this season with W3 D3 L0.",
-  COM: "Fabregas positional play - medium press to win ball in the middle third. Fast transitions via Nico Paz and Diao. PPDA reflects controlled, structured defending not passivity.",
-};
- 
-var TEAM_STR = {
-  INT: "Ball retention under pressure . Clinical counter-attack . Dominant set pieces",
-  NAP: "High turnover rate . Aggressive man-marking . Tireless engine room",
-  ACM: "Defensive solidity . Elite counter speed . W3 D3 L0 vs top-6",
-  COM: "Positional structure . Versatile transitions . League-best xGA",
-};
- 
-var BC = { high:"#ff6d00", medium:"#c9a84c", low:"#69f0ae" };
- 
-var ACM_TOP6 = [
-  { opp:"Inter",    h:false, res:"W", score:"1-0", md:29, note:"Low block stifles Chivu 3-5-2, Leao counter seals it" },
-  { opp:"Napoli",   h:true,  res:"W", score:"2-1", md:6,  note:"Gimenez and Leao punish Conte's high line" },
-  { opp:"Juventus", h:false, res:"D", score:"0-0", md:7,  note:"Allegri shuts down old club, 4-4-2 mirror match" },
-  { opp:"Roma",     h:true,  res:"W", score:"1-0", md:11, note:"Deep block, Pulisic counter-press goal" },
-  { opp:"Como",     h:true,  res:"D", score:"1-1", md:20, note:"Leao equaliser, Fabregas system causes problems" },
-  { opp:"Atalanta", h:false, res:"D", score:"1-1", md:10, note:"Reactive 4-4-2 handles Gasperini's intensity" },
+
+var STATS20 = [
+{abbr:‘INT’,name:‘Inter Milano’,   color:’#2255aa’, ppda: 8.8, xg:2.00,xga:0.88,shots:18.2,poss:61.2,tkl:14,trn:7.0, fouls:13.3,block:‘Med Press’},
+{abbr:‘NAP’,name:‘SSC Napoli’,     color:’#0e9aff’, ppda: 7.4, xg:1.48,xga:1.10,shots:13.0,poss:60.8,tkl:13,trn:9.0, fouls:13.3,block:‘High Press’},
+{abbr:‘ACM’,name:‘AC Milan’,       color:’#d40000’, ppda:14.5, xg:1.48,xga:0.83,shots:13.7,poss:50.8,tkl:14,trn:6.2, fouls: 9.9,block:‘Low Block’},
+{abbr:‘COM’,name:‘Como 1907’,      color:’#8855cc’, ppda: 9.3, xg:1.53,xga:0.85,shots:14.3,poss:59.8,tkl:17,trn:8.9, fouls:16.4,block:‘Med Press’},
+{abbr:‘JUV’,name:‘Juventus’,       color:’#aaaaaa’, ppda:10.0, xg:1.68,xga:1.05,shots:16.8,poss:60.0,tkl:16,trn:7.5, fouls:12.5,block:‘Med Block’},
+{abbr:‘ROM’,name:‘AS Roma’,        color:’#c8a000’, ppda: 9.6, xg:1.30,xga:0.90,shots:13.2,poss:60.4,tkl:15,trn:9.5, fouls:14.5,block:‘High Press’},
+{abbr:‘ATA’,name:‘Atalanta’,       color:’#003399’, ppda: 8.5, xg:1.35,xga:1.00,shots:14.9,poss:52.8,tkl:16,trn:8.3, fouls:10.0,block:‘High Press’},
+{abbr:‘BOL’,name:‘Bologna’,        color:’#cc0000’, ppda: 9.1, xg:1.28,xga:1.20,shots:13.4,poss:54.4,tkl:15,trn:8.2, fouls:15.1,block:‘High Press’},
+{abbr:‘LAZ’,name:‘Lazio’,          color:’#88ccee’, ppda:15.5, xg:1.05,xga:1.05,shots:11.1,poss:50.0,tkl:14,trn:7.0, fouls:11.0,block:‘Low Block’},
+{abbr:‘UDI’,name:‘Udinese’,        color:’#888888’, ppda:12.4, xg:1.18,xga:1.40,shots:11.1,poss:48.0,tkl:16,trn:9.0, fouls:12.8,block:‘Hybrid’},
+{abbr:‘SAS’,name:‘Sassuolo’,       color:’#008800’, ppda:12.0, xg:1.23,xga:1.30,shots:10.5,poss:44.0,tkl:14,trn:8.7, fouls:14.0,block:‘Hybrid’},
+{abbr:‘PAR’,name:‘Parma’,          color:’#ddcc00’, ppda:16.1, xg:1.10,xga:1.30,shots:11.1,poss:44.6,tkl:14,trn:8.0, fouls:11.8,block:‘Low Block’},
+{abbr:‘GEN’,name:‘Genoa’,          color:’#bb0000’, ppda:10.4, xg:1.05,xga:1.25,shots:11.7,poss:51.2,tkl:17,trn:9.2, fouls:14.8,block:‘Med Block’},
+{abbr:‘TOR’,name:‘Torino’,         color:’#883300’, ppda:13.5, xg:1.20,xga:1.35,shots:11.7,poss:42.8,tkl:16,trn:7.7, fouls:13.6,block:‘Low Block’},
+{abbr:‘CAG’,name:‘Cagliari’,       color:’#990000’, ppda:15.0, xg:1.05,xga:1.30,shots:10.0,poss:43.8,tkl:16,trn:7.5, fouls:15.7,block:‘Low Block’},
+{abbr:‘FIO’,name:‘Fiorentina’,     color:’#7700aa’, ppda:11.5, xg:1.00,xga:1.20,shots:13.6,poss:52.6,tkl:14,trn:7.4, fouls:14.6,block:‘Med Block’},
+{abbr:‘LEC’,name:‘Lecce’,          color:’#cc6600’, ppda:12.2, xg:0.95,xga:1.40,shots: 9.9,poss:42.8,tkl:19,trn:9.3, fouls:12.5,block:‘Hybrid’},
+{abbr:‘CRE’,name:‘Cremonese’,      color:’#c8a000’, ppda:13.8, xg:1.00,xga:1.40,shots: 9.2,poss:45.0,tkl:15,trn:7.5, fouls:11.9,block:‘Low Block’},
+{abbr:‘PIS’,name:‘Pisa SC’,        color:’#000099’, ppda:14.2, xg:0.85,xga:1.35,shots: 9.9,poss:38.2,tkl:17,trn:6.7, fouls:13.3,block:‘Low Block’},
+{abbr:‘VER’,name:‘Hellas Verona’,  color:’#002299’, ppda:13.0, xg:0.90,xga:1.60,shots:10.8,poss:36.8,tkl:19,trn:7.3, fouls:17.0,block:‘Med-Low’},
 ];
- 
-var TOP4_H2H = [
-  { md:31, home:"NAP", away:"ACM" },
-  { md:31, home:"INT", away:"ROM" },
-  { md:32, home:"COM", away:"INT" },
-  { md:34, home:"ACM", away:"JUV" },
-  { md:35, home:"COM", away:"NAP" },
-  { md:38, home:"COM", away:"ROM" },
-];
- 
+
+// — CALIBRATED TO SERIE A 2025-26 ACTUALS ––––––––––––––––
+// Real league stats: Home wins 39% . Draws 26% . Away wins 34% . Avg goals 2.45
+// Home avg goals ~1.30 . Away avg goals ~1.15
+// —————————————————————————–
+
+// Recency-weighted form: last game x3, second-to-last x2, rest x1
 function fscore(form) {
-  var weights = [1, 1, 1, 2, 3];
-  var pts = 0, total = 0;
-  for (var i = 0; i < form.length; i++) {
-    var w = weights[i] || 1;
-    pts += (form[i] === "W" ? 3 : form[i] === "D" ? 1 : 0) * w;
-    total += 3 * w;
-  }
-  return pts / total;
+var weights = [1, 1, 1, 2, 3]; // oldest to most recent
+var pts = 0, total = 0;
+for (var i = 0; i < form.length; i++) {
+var w = weights[i] || 1;
+pts += (form[i] === “W” ? 3 : form[i] === “D” ? 1 : 0) * w;
+total += 3 * w;
 }
- 
+return pts / total; // 0.0 to 1.0
+}
+
 function probs(abbr, fx) {
-  var a = ADV[abbr] || {};
-  var t = TEAMS.find(function(x) { return x.abbr === abbr; });
-  var os = OPP[fx.oppAbbr] || 50;
- 
-  var injStr = 0, injXG = 0;
-  var inj = INJURIES[abbr];
-  if (inj && fx.md && fx.md < inj.outUntilMd) { injStr = inj.strPenalty; injXG = inj.xGPenalty; }
- 
-  var oppReduction = 0;
-  // FIX #3: use the extracted constant instead of INJURIES.ROM_MD31_oppStrReduction
-  if (abbr === "INT" && fx.oppAbbr === "ROM" && fx.md === 31) { oppReduction = ROM_MD31_OPP_STR_REDUCTION; }
- 
-  var myStr  = Math.max(1, (a.str || 50) - injStr);
-  var oppStr = Math.max(1, os - oppReduction);
-  var formBonus = fscore(t.form);
- 
-  var strGap = myStr - oppStr;
-  var logOddsAdj = strGap * 0.032;
-  logOddsAdj += (formBonus - 0.5) * 0.4;
- 
-  var homeAdj = fx.h ? 0.25 : -0.20;
-  logOddsAdj += homeAdj;
- 
-  var xgBonus = ((a.xG || 1.5) - 1.5) * 0.12 + (1.1 - (a.xGA || 1.1)) * 0.15 - injXG * 0.1;
-  logOddsAdj += xgBonus;
- 
-  var winP = 100 / (1 + Math.exp(-logOddsAdj));
- 
-  var drawBase = 26 - Math.abs(strGap) * 0.50 - Math.abs(formBonus - 0.5) * 4;
-  var drawP = Math.min(28, Math.max(6, drawBase));
- 
-  var remaining = 100 - drawP;
-  var hWin = Math.min(85, Math.max(6, winP * remaining / 100));
-  var aWin = Math.max(4, remaining - hWin);
- 
-  return { winP: hWin, drawP: drawP, lossP: aWin };
+var a = ADV[abbr] || {};
+var t = TEAMS.find(function(x) { return x.abbr === abbr; });
+var os = OPP[fx.oppAbbr] || 50;
+
+// Injury penalties
+var injStr = 0, injXG = 0;
+var inj = INJURIES[abbr];
+if (inj && fx.md && fx.md < inj.outUntilMd) { injStr = inj.strPenalty; injXG = inj.xGPenalty; }
+
+var oppReduction = 0;
+if (abbr === “INT” && fx.oppAbbr === “ROM” && fx.md === 31) { oppReduction = ROM_MD31_OPP_STR_REDUCTION; }
+
+var myStr  = Math.max(1, (a.str || 50) - injStr);
+var oppStr = Math.max(1, os - oppReduction);
+var formBonus = fscore(t.form); // 0-1
+
+// Stronger gap coefficient: 10pts = 0.32 log-odds (was 0.25, too weak for mismatches)
+var strGap = myStr - oppStr;
+var logOddsAdj = strGap * 0.032;
+
+// Form: lighter weight (0.4 not 0.6) - season-long quality > 5-game form
+logOddsAdj += (formBonus - 0.5) * 0.4;
+
+// Home advantage: +0.25 home, -0.20 away
+var homeAdj = fx.h ? 0.25 : -0.20;
+logOddsAdj += homeAdj;
+
+// xG quality from STATS20 for all 20 teams; ADV overrides for top-4 (more precise)
+var s20me  = STATS20.find(function(x){ return x.abbr === abbr; }) || {};
+var s20opp = STATS20.find(function(x){ return x.abbr === fx.oppAbbr; }) || {};
+var myXG   = (a.xG  || s20me.xg  || 1.21) - injXG;
+var myXGA  = (a.xGA || s20me.xga || 1.21);
+var oppXGA = s20opp.xga || 1.21;
+var oppXG  = s20opp.xg  || 1.21;
+// Attacking quality vs opp defence; defensive quality vs opp attack
+var xgBonus = (myXG - 1.21) * 0.10 + (1.21 - myXGA) * 0.12
+- (oppXG - 1.21) * 0.06 + (oppXGA - 1.21) * 0.06;
+xgBonus = Math.max(-0.3, Math.min(0.3, xgBonus));
+logOddsAdj += xgBonus;
+
+// Convert log-odds to win probability via logistic
+var winP = 100 / (1 + Math.exp(-logOddsAdj));
+
+// Draw: lower floor (6%), faster decay with gap - Serie A draws rare in mismatches
+var drawBase = 26 - Math.abs(strGap) * 0.50 - Math.abs(formBonus - 0.5) * 4;
+var drawP = Math.min(28, Math.max(6, drawBase));
+
+// Higher win cap (85%, was 78%) - strong teams can dominate weak ones
+var remaining = 100 - drawP;
+var hWin = Math.min(85, Math.max(6, winP * remaining / 100));
+var aWin = Math.max(4, remaining - hWin);
+
+return { winP: hWin, drawP: drawP, lossP: aWin };
 }
- 
+
 function roll(wp, dp) {
-  var r = Math.random() * 100;
-  if (r < wp) return "W";
-  if (r < wp + dp) return "D";
-  return "L";
+var r = Math.random() * 100;
+if (r < wp) return “W”;
+if (r < wp + dp) return “D”;
+return “L”;
 }
- 
+
 function poisson(lam) {
-  var L = Math.exp(-Math.min(lam, 10));
-  var k = 0, p = 1;
-  do { k++; p *= Math.random(); } while (p > L);
-  return k - 1;
+var L = Math.exp(-Math.min(lam, 10));
+var k = 0, p = 1;
+do { k++; p *= Math.random(); } while (p > L);
+return k - 1;
 }
- 
+
 function h2h(ha, aa) {
-  var hA = ADV[ha] || {};
-  var aA = ADV[aa] || {};
-  var hT = TEAMS.find(function(t) { return t.abbr === ha; });
-  var aT = TEAMS.find(function(t) { return t.abbr === aa; });
-  var hS = hA.str || OPP[ha] || 50;
-  var aS = aA.str || OPP[aa] || 50;
-  var hTD = TDATA[ha] || { bk:"medium", block:"Medium Block", ppda:11 };
-  var aTD = TDATA[aa] || { bk:"medium", block:"Medium Block", ppda:11 };
- 
-  // FIX #1: use _vs_ separator to match BLOCK_MU keys
-  var muH = BLOCK_MU[hTD.bk + "_vs_" + aTD.bk] || { atk:0, gm:1.0, label:"" };
-  var muA = BLOCK_MU[aTD.bk + "_vs_" + hTD.bk] || { atk:0, gm:1.0, label:"" };
- 
-  var hXG  = hA.xG  || (GXG[ha] ? GXG[ha].xg  : 1.21);
-  var hXGA = hA.xGA || (GXG[ha] ? GXG[ha].xga : 1.21);
-  var aXG  = aA.xG  || (GXG[aa] ? GXG[aa].xg  : 1.21);
-  var aXGA = aA.xGA || (GXG[aa] ? GXG[aa].xga : 1.21);
- 
-  var hAtt = hXG  / 1.21;
-  var hDef = 1.21 / aXGA;
-  var aAtt = aXG  / 1.21;
-  var aDef = 1.21 / hXGA;
- 
-  var strRatio = Math.pow(hS / Math.max(aS, 1), 0.15);
-  var hL = 1.30 * Math.sqrt(hAtt * hDef) * strRatio * muH.gm;
-  var aL = 1.15 * Math.sqrt(aAtt * aDef) * (1 / strRatio) * muA.gm;
- 
-  hL = Math.min(2.8, Math.max(0.4, hL));
-  aL = Math.min(2.8, Math.max(0.4, aL));
- 
-  var hG = poisson(hL);
-  var aG = poisson(aL);
- 
-  var mins = [];
-  for (var i = 1; i <= 90; i++) mins.push(i);
-  mins.sort(function() { return Math.random() - 0.5; });
- 
-  var goalMins = mins.slice(0, hG + aG).sort(function(a, b) { return a - b; });
- 
-  var sides = [];
-  for (var j = 0; j < hG; j++) sides.push("H");
-  for (var k = 0; k < aG; k++) sides.push("A");
-  sides.sort(function() { return Math.random() - 0.5; });
- 
-  var hs = 0, as = 0;
-  var evs = goalMins.map(function(min, idx) {
-    var isH = sides[idx] === "H";
-    if (isH) hs++; else as++;
-    var ab = isH ? ha : aa;
-    var ro = PL[ab] ? PL[ab].slice(1) : ["Unknown"];
-    return { min:min, type:"goal", team:ab, scorer:ro[Math.floor(Math.random() * ro.length)], hS:hs, aS:as };
-  });
- 
-  var cMins = mins.slice(hG + aG, hG + aG + Math.floor(Math.random() * 4) + 1).sort(function(a, b) { return a - b; });
-  cMins.forEach(function(min) {
-    evs.push({ min:min, type:"yellow", team:Math.random() > 0.5 ? ha : aa });
-  });
-  evs.sort(function(a, b) { return a.min - b.min; });
- 
-  var hProbs = probs(ha, { oppAbbr:aa, h:true, md:99 });
-  return {
-    hG:hG, aG:aG, evs:evs,
-    hW:Math.round(hProbs.winP), dP:Math.round(hProbs.drawP), aW:Math.round(hProbs.lossP),
-    tacticLabel:muH.label,
-    hBk:hTD.bk, aBk:aTD.bk, hBlock:hTD.block, aBlock:aTD.block,
-    hTeam:hT, aTeam:aT
-  };
+var hA = ADV[ha] || {};
+var aA = ADV[aa] || {};
+var hT = TEAMS.find(function(t) { return t.abbr === ha; });
+var aT = TEAMS.find(function(t) { return t.abbr === aa; });
+var hS = hA.str || OPP[ha] || 50;
+var aS = aA.str || OPP[aa] || 50;
+var hTD = TDATA[ha] || { bk:“medium”, block:“Medium Block”, ppda:11 };
+var aTD = TDATA[aa] || { bk:“medium”, block:“Medium Block”, ppda:11 };
+var muH = BLOCK_MU[hTD.bk + “*vs*” + aTD.bk] || { atk:0, gm:1.0, label:”” };
+var muA = BLOCK_MU[aTD.bk + “*vs*” + hTD.bk] || { atk:0, gm:1.0, label:”” };
+
+// Use real Statsbomb xG from ADV if available, else fall back to GXG estimates
+var hXG  = hA.xG  || (GXG[ha]  ? GXG[ha].xg  : 1.21);
+var hXGA = hA.xGA || (GXG[ha]  ? GXG[ha].xga : 1.21);
+var aXG  = aA.xG  || (GXG[aa]  ? GXG[aa].xg  : 1.21);
+var aXGA = aA.xGA || (GXG[aa]  ? GXG[aa].xga : 1.21);
+
+// Geometric mean of attackxdefence ratios dampens extremes in top matchups
+var hAtt = hXG  / 1.21;
+var hDef = 1.21 / aXGA;
+var aAtt = aXG  / 1.21;
+var aDef = 1.21 / hXGA;
+
+var strRatio = Math.pow(hS / Math.max(aS, 1), 0.15);
+
+var hL = 1.30 * Math.sqrt(hAtt * hDef) * strRatio * muH.gm;
+var aL = 1.15 * Math.sqrt(aAtt * aDef) * (1 / strRatio) * muA.gm;
+
+// Clamp to realistic Serie A range (0.4-2.8 goals expected per team)
+hL = Math.min(2.8, Math.max(0.4, hL));
+aL = Math.min(2.8, Math.max(0.4, aL));
+
+var hG = poisson(hL);
+var aG = poisson(aL);
+var mins = [];
+for (var i = 1; i <= 90; i++) mins.push(i);
+mins.sort(function() { return Math.random() - 0.5; });
+var goalMins = mins.slice(0, hG + aG).sort(function(a, b) { return a - b; });
+var sides = [];
+for (var j = 0; j < hG; j++) sides.push(“H”);
+for (var k = 0; k < aG; k++) sides.push(“A”);
+sides.sort(function() { return Math.random() - 0.5; });
+var hs = 0, as = 0;
+var evs = goalMins.map(function(min, idx) {
+var isH = sides[idx] === “H”;
+if (isH) hs++; else as++;
+var ab = isH ? ha : aa;
+var ro = PL[ab] ? PL[ab].slice(1) : [“Unknown”]; // slice(1) skips GK at index 0
+return { min:min, type:“goal”, team:ab, scorer:ro[Math.floor(Math.random() * ro.length)], hS:hs, aS:as };
+});
+var cMins = mins.slice(hG + aG, hG + aG + Math.floor(Math.random() * 4) + 1).sort(function(a, b) { return a - b; });
+cMins.forEach(function(min) {
+evs.push({ min:min, type:“yellow”, team:Math.random() > 0.5 ? ha : aa });
+});
+evs.sort(function(a, b) { return a.min - b.min; });
+
+// Pre-match probabilities using calibrated probs()
+var hProbs = probs(ha, { oppAbbr:aa, h:true, md:99 });
+var hS20 = STATS20.find(function(x){ return x.abbr===ha; }) || {};
+var aS20 = STATS20.find(function(x){ return x.abbr===aa; }) || {};
+var pressNote = (hS20.ppda && aS20.ppda)
+? (hS20.ppda<9?‘High press’:hS20.ppda<12?‘Med press’:‘Low block’)+’ (’+hS20.ppda+’) vs ’
++(aS20.ppda<9?‘High press’:aS20.ppda<12?‘Med press’:‘Low block’)+’ (’+aS20.ppda+’)’
+: ‘’;
+return { hG:hG, aG:aG, evs:evs, hW:Math.round(hProbs.winP), dP:Math.round(hProbs.drawP), aW:Math.round(hProbs.lossP),
+tacticLabel: (muH.label || pressNote), pressNote:pressNote,
+hBk:hTD.bk, aBk:aTD.bk, hBlock:hTD.block, aBlock:aTD.block,
+hS20:hS20, aS20:aS20, hTeam:hT, aTeam:aT };
 }
- 
+
+// H2H fixtures between top-4 teams - must be simulated ONCE per scenario
+// format: { md, home, away } - home team hosts
+// All direct H2H clashes between top-6 teams - simulated once per scenario
+var TOP4_H2H = [
+{ md:31, home:“NAP”, away:“ACM” },
+{ md:31, home:“INT”, away:“ROM” },
+{ md:32, home:“COM”, away:“INT” },
+{ md:34, home:“ACM”, away:“JUV” },
+{ md:35, home:“COM”, away:“NAP” },
+{ md:38, home:“COM”, away:“ROM” },
+];
+
 function mcRun(n) {
-  var titles  = { INT:0, NAP:0, ACM:0, COM:0, JUV:0, ROM:0 };
-  var clSpots = { INT:0, NAP:0, ACM:0, COM:0, JUV:0, ROM:0 };
-  var dist    = { INT:[], NAP:[], ACM:[], COM:[], JUV:[], ROM:[] };
-  var ties = 0;
- 
-  for (var i = 0; i < n; i++) {
-    var pts = { INT:69, NAP:62, ACM:63, COM:57, JUV:54, ROM:54 };
-    var h2hResults = {};
- 
+var titles  = { INT:0, NAP:0, ACM:0, COM:0, JUV:0, ROM:0 };
+var clSpots = { INT:0, NAP:0, ACM:0, COM:0, JUV:0, ROM:0 };
+var dist    = { INT:[], NAP:[], ACM:[], COM:[], JUV:[], ROM:[] };
+var ties = 0;
+
+for (var i = 0; i < n; i++) {
+var pts = { INT:69, NAP:62, ACM:63, COM:57, JUV:54, ROM:54 };
+
+```
+var h2hResults = {};
+TOP4_H2H.forEach(function(clash) {
+  var p = probs(clash.home, { oppAbbr: clash.away, h: true });
+  var r = roll(p.winP, p.drawP);
+  h2hResults[clash.home + "_" + clash.away] = r;
+});
+
+TOP6.forEach(function(t) {
+  if (!FX[t.abbr]) return;
+  FX[t.abbr].forEach(function(fx) {
+    var h2hKey = "";
     TOP4_H2H.forEach(function(clash) {
-      var p = probs(clash.home, { oppAbbr: clash.away, h: true });
+      if (clash.home === t.abbr && clash.away === fx.oppAbbr) { h2hKey = clash.home + "_" + clash.away; }
+      if (clash.away === t.abbr && clash.home === fx.oppAbbr) { h2hKey = clash.home + "_" + clash.away; }
+    });
+    if (h2hKey) {
+      var homeRes = h2hResults[h2hKey];
+      var myRes = t.abbr === h2hKey.split("_")[0] ? homeRes : (homeRes === "W" ? "L" : homeRes === "L" ? "W" : "D");
+      pts[t.abbr] += myRes === "W" ? 3 : myRes === "D" ? 1 : 0;
+    } else {
+      var p = probs(t.abbr, fx);
       var r = roll(p.winP, p.drawP);
-      h2hResults[clash.home + "_" + clash.away] = r;
-    });
- 
-    TOP6.forEach(function(t) {
-      if (!FX[t.abbr]) return;
-      FX[t.abbr].forEach(function(fx) {
-        var h2hKey = "";
-        TOP4_H2H.forEach(function(clash) {
-          if (clash.home === t.abbr && clash.away === fx.oppAbbr) { h2hKey = clash.home + "_" + clash.away; }
-          if (clash.away === t.abbr && clash.home === fx.oppAbbr) { h2hKey = clash.home + "_" + clash.away; }
-        });
- 
-        if (h2hKey) {
-          var homeRes = h2hResults[h2hKey];
-          var myRes = t.abbr === h2hKey.split("_")[0] ? homeRes : (homeRes === "W" ? "L" : homeRes === "L" ? "W" : "D");
-          pts[t.abbr] += myRes === "W" ? 3 : myRes === "D" ? 1 : 0;
-        } else {
-          var p = probs(t.abbr, fx);
-          var r = roll(p.winP, p.drawP);
-          pts[t.abbr] += r === "W" ? 3 : r === "D" ? 1 : 0;
-        }
-      });
-    });
- 
-    TOP6.forEach(function(t) { dist[t.abbr].push(pts[t.abbr]); });
- 
-    var mx = Math.max(pts.INT, pts.NAP, pts.ACM, pts.COM, pts.JUV, pts.ROM);
-    var winners = TOP6.filter(function(t) { return pts[t.abbr] === mx; });
-    if (winners.length > 1) ties++;
- 
-    var w = winners.find(function(x) { return x.abbr === "INT"; }) || winners[0];
-    titles[w.abbr]++;
- 
-    var ranked = TOP6.slice().sort(function(a, b) {
-      if (pts[b.abbr] !== pts[a.abbr]) return pts[b.abbr] - pts[a.abbr];
-      return a.rank - b.rank;
-    });
-    for (var j = 0; j < 4; j++) { clSpots[ranked[j].abbr]++; }
-  }
- 
-  var avg = {}, mn = {}, mx2 = {};
-  TOP6.forEach(function(t) {
-    var d = dist[t.abbr];
-    avg[t.abbr] = (d.reduce(function(a, b) { return a + b; }, 0) / d.length).toFixed(1);
-    mn[t.abbr]  = Math.min.apply(null, d);
-    mx2[t.abbr] = Math.max.apply(null, d);
+      pts[t.abbr] += r === "W" ? 3 : r === "D" ? 1 : 0;
+    }
   });
- 
-  return { titles:titles, clSpots:clSpots, n:n, ties:ties, avg:avg, mn:mn, mx:mx2 };
+});
+
+TOP6.forEach(function(t) { dist[t.abbr].push(pts[t.abbr]); });
+
+var mx = Math.max(pts.INT, pts.NAP, pts.ACM, pts.COM, pts.JUV, pts.ROM);
+var winners = TOP6.filter(function(t) { return pts[t.abbr] === mx; });
+if (winners.length > 1) ties++;
+var w = winners.find(function(x) { return x.abbr === "INT"; }) || winners[0];
+titles[w.abbr]++;
+
+// CL top-4: sort by pts then by pre-season rank as tiebreak
+var ranked = TOP6.slice().sort(function(a, b) {
+  if (pts[b.abbr] !== pts[a.abbr]) return pts[b.abbr] - pts[a.abbr];
+  return a.rank - b.rank;
+});
+for (var j = 0; j < 4; j++) { clSpots[ranked[j].abbr]++; }
+```
+
 }
- 
+
+var avg = {}, mn = {}, mx2 = {};
+TOP6.forEach(function(t) {
+var d = dist[t.abbr];
+avg[t.abbr] = (d.reduce(function(a, b) { return a + b; }, 0) / d.length).toFixed(1);
+mn[t.abbr]  = Math.min.apply(null, d);
+mx2[t.abbr] = Math.max.apply(null, d);
+});
+return { titles:titles, clSpots:clSpots, n:n, ties:ties, avg:avg, mn:mn, mx:mx2 };
+}
+
 function getMomentum(form) {
-  var pts = form.reduce(function(a, r) { return a + (r === "W" ? 3 : r === "D" ? 1 : 0); }, 0);
-  var pct = pts / 15;
-  var label, color, emoji;
-  if (pts >= 13)      { label = "Flying";       color = "#00e676"; emoji = "🔥"; }
-  else if (pts >= 10) { label = "In Form";      color = "#69f0ae"; emoji = "📈"; }
-  else if (pts >= 7)  { label = "Inconsistent"; color = "#ffd740"; emoji = "〰️"; }
-  else if (pts >= 4)  { label = "Struggling";   color = "#ff6d00"; emoji = "📉"; }
-  else                { label = "Crisis";        color = "#ff1744"; emoji = "🚨"; }
-  return { pts:pts, pct:pct, label:label, color:color, emoji:emoji };
+var pts = form.reduce(function(a, r) { return a + (r === “W” ? 3 : r === “D” ? 1 : 0); }, 0);
+var pct = pts / 15;
+var label, color, emoji;
+if (pts >= 13)      { label = “Flying”;       color = “#00e676”; emoji = “🔥”; }
+else if (pts >= 10) { label = “In Form”;      color = “#69f0ae”; emoji = “📈”; }
+else if (pts >= 7)  { label = “Inconsistent”; color = “#ffd740”; emoji = “〰️”; }
+else if (pts >= 4)  { label = “Struggling”;   color = “#ff6d00”; emoji = “📉”; }
+else                { label = “Crisis”;       color = “#ff1744”; emoji = “🚨”; }
+return { pts:pts, pct:pct, label:label, color:color, emoji:emoji };
 }
- 
+
 function DiffBadge(props) {
-  var s = props.s;
-  var c, l;
-  if (s >= 80)      { c = "#ff1744"; l = "Nightmare"; }
-  else if (s >= 65) { c = "#ff6d00"; l = "Tough"; }
-  else if (s >= 50) { c = "#ffd740"; l = "Tricky"; }
-  else if (s >= 35) { c = "#69f0ae"; l = "Favourable"; }
-  else              { c = "#00e676"; l = "Must Win"; }
-  return '<span style="color:'+c+';font-family:Georgia,serif;font-size:0.64rem">'+l+'</span>';
+var s = props.s;
+var c, l;
+if (s >= 80) { c = “#ff1744”; l = “Nightmare”; }
+else if (s >= 65) { c = “#ff6d00”; l = “Tough”; }
+else if (s >= 50) { c = “#ffd740”; l = “Tricky”; }
+else if (s >= 35) { c = “#69f0ae”; l = “Favourable”; }
+else { c = “#00e676”; l = “Must Win”; }
+return ‘<span style="color:'+c+';font-family:Georgia,serif;font-size:0.64rem">’+l+’</span>’;
 }
- 
+
+var STATS20 = [
+{abbr:‘INT’,name:‘Inter Milano’,   color:’#2255aa’, ppda: 8.8, xg:2.00,xga:0.88,shots:18.2,poss:61.2,tkl:14,trn:7.0, fouls:13.3,block:‘Med Press’},
+{abbr:‘NAP’,name:‘SSC Napoli’,     color:’#0e9aff’, ppda: 7.4, xg:1.48,xga:1.10,shots:13.0,poss:60.8,tkl:13,trn:9.0, fouls:13.3,block:‘High Press’},
+{abbr:‘ACM’,name:‘AC Milan’,       color:’#d40000’, ppda:14.5, xg:1.48,xga:0.83,shots:13.7,poss:50.8,tkl:14,trn:6.2, fouls: 9.9,block:‘Low Block’},
+{abbr:‘COM’,name:‘Como 1907’,      color:’#8855cc’, ppda: 9.3, xg:1.53,xga:0.85,shots:14.3,poss:59.8,tkl:17,trn:8.9, fouls:16.4,block:‘Med Press’},
+{abbr:‘JUV’,name:‘Juventus’,       color:’#aaaaaa’, ppda:10.0, xg:1.68,xga:1.05,shots:16.8,poss:60.0,tkl:16,trn:7.5, fouls:12.5,block:‘Med Block’},
+{abbr:‘ROM’,name:‘AS Roma’,        color:’#c8a000’, ppda: 9.6, xg:1.30,xga:0.90,shots:13.2,poss:60.4,tkl:15,trn:9.5, fouls:14.5,block:‘High Press’},
+{abbr:‘ATA’,name:‘Atalanta’,       color:’#003399’, ppda: 8.5, xg:1.35,xga:1.00,shots:14.9,poss:52.8,tkl:16,trn:8.3, fouls:10.0,block:‘High Press’},
+{abbr:‘BOL’,name:‘Bologna’,        color:’#cc0000’, ppda: 9.1, xg:1.28,xga:1.20,shots:13.4,poss:54.4,tkl:15,trn:8.2, fouls:15.1,block:‘High Press’},
+{abbr:‘LAZ’,name:‘Lazio’,          color:’#88ccee’, ppda:15.5, xg:1.05,xga:1.05,shots:11.1,poss:50.0,tkl:14,trn:7.0, fouls:11.0,block:‘Low Block’},
+{abbr:‘UDI’,name:‘Udinese’,        color:’#888888’, ppda:12.4, xg:1.18,xga:1.40,shots:11.1,poss:48.0,tkl:16,trn:9.0, fouls:12.8,block:‘Hybrid’},
+{abbr:‘SAS’,name:‘Sassuolo’,       color:’#008800’, ppda:12.0, xg:1.23,xga:1.30,shots:10.5,poss:44.0,tkl:14,trn:8.7, fouls:14.0,block:‘Hybrid’},
+{abbr:‘PAR’,name:‘Parma’,          color:’#ddcc00’, ppda:16.1, xg:1.10,xga:1.30,shots:11.1,poss:44.6,tkl:14,trn:8.0, fouls:11.8,block:‘Low Block’},
+{abbr:‘GEN’,name:‘Genoa’,          color:’#bb0000’, ppda:10.4, xg:1.05,xga:1.25,shots:11.7,poss:51.2,tkl:17,trn:9.2, fouls:14.8,block:‘Med Block’},
+{abbr:‘TOR’,name:‘Torino’,         color:’#883300’, ppda:13.5, xg:1.20,xga:1.35,shots:11.7,poss:42.8,tkl:16,trn:7.7, fouls:13.6,block:‘Low Block’},
+{abbr:‘CAG’,name:‘Cagliari’,       color:’#990000’, ppda:15.0, xg:1.05,xga:1.30,shots:10.0,poss:43.8,tkl:16,trn:7.5, fouls:15.7,block:‘Low Block’},
+{abbr:‘FIO’,name:‘Fiorentina’,     color:’#7700aa’, ppda:11.5, xg:1.00,xga:1.20,shots:13.6,poss:52.6,tkl:14,trn:7.4, fouls:14.6,block:‘Med Block’},
+{abbr:‘LEC’,name:‘Lecce’,          color:’#cc6600’, ppda:12.2, xg:0.95,xga:1.40,shots: 9.9,poss:42.8,tkl:19,trn:9.3, fouls:12.5,block:‘Hybrid’},
+{abbr:‘CRE’,name:‘Cremonese’,      color:’#c8a000’, ppda:13.8, xg:1.00,xga:1.40,shots: 9.2,poss:45.0,tkl:15,trn:7.5, fouls:11.9,block:‘Low Block’},
+{abbr:‘PIS’,name:‘Pisa SC’,        color:’#000099’, ppda:14.2, xg:0.85,xga:1.35,shots: 9.9,poss:38.2,tkl:17,trn:6.7, fouls:13.3,block:‘Low Block’},
+{abbr:‘VER’,name:‘Hellas Verona’,  color:’#002299’, ppda:13.0, xg:0.90,xga:1.60,shots:10.8,poss:36.8,tkl:19,trn:7.3, fouls:17.0,block:‘Med-Low’},
+];
+
+// – STATE
 var state = {
-  tab:'runin', sim:{}, ran:false,
-  home:'INT', away:'NAP',
-  match:null, evs:[], score:{h:0,a:0},
-  playing:false, fin:false, hist:[],
-  mc:null, mcr:false
+tab:‘runin’, sim:{}, ran:false,
+home:‘INT’, away:‘NAP’,
+match:null, evs:[], score:{h:0,a:0},
+playing:false, fin:false, hist:[],
+mc:null, mcr:false
 };
- 
 var playInterval = null;
- 
+
 function setState(patch) { Object.assign(state, patch); render(); }
- 
+
 function esc(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+return String(s).replace(/&/g,’&’).replace(/</g,’<’).replace(/>/g,’>’).replace(/”/g,’"’);
 }
- 
 function colorBox(res) {
-  var bg = res==='W'?'#00e676':res==='D'?'#ffd740':'#ff1744';
-  return '<span style="display:inline-block;width:16px;height:16px;border-radius:2px;background:'+bg+';color:#07090d;font-size:0.44rem;font-weight:700;text-align:center;line-height:16px">'+res+'</span>';
+var bg = res===‘W’?’#00e676’:res===‘D’?’#ffd740’:’#ff1744’;
+return ‘<span style="display:inline-block;width:16px;height:16px;border-radius:2px;background:'+bg+';color:#07090d;font-size:0.44rem;font-weight:700;text-align:center;line-height:16px">’+res+’</span>’;
 }
- 
+
+// – RUN-IN
 function doRunIn() {
-  var h2hResults = {};
-  TOP4_H2H.forEach(function(clash) {
-    var p = probs(clash.home, { oppAbbr:clash.away, h:true, md:99 });
-    h2hResults[clash.home+'_'+clash.away] = roll(p.winP, p.drawP);
-  });
- 
-  var sim = {};
-  TOP6.forEach(function(t) {
-    var cum = 0;
-    sim[t.abbr] = FX[t.abbr].map(function(fx) {
-      var h2hKey = '';
-      TOP4_H2H.forEach(function(clash) {
-        if (clash.home===t.abbr && clash.away===fx.oppAbbr) h2hKey=clash.home+'_'+clash.away;
-        if (clash.away===t.abbr && clash.home===fx.oppAbbr) h2hKey=clash.home+'_'+clash.away;
-      });
- 
-      var res;
-      if (h2hKey) {
-        var hr = h2hResults[h2hKey];
-        res = t.abbr===h2hKey.split('_')[0] ? hr : (hr==='W'?'L':hr==='L'?'W':'D');
-      } else {
-        var p = probs(t.abbr, fx);
-        res = roll(p.winP, p.drawP);
-      }
- 
-      cum += res==='W'?3:res==='D'?1:0;
-      var pp = probs(t.abbr, fx);
-      return { res:res, cum:cum, winP:Math.round(pp.winP), drawP:Math.round(pp.drawP) };
-    });
-  });
- 
-  setState({ sim:sim, ran:true });
+var h2hResults = {};
+TOP4_H2H.forEach(function(clash) {
+var p = probs(clash.home, { oppAbbr:clash.away, h:true, md:99 });
+h2hResults[clash.home+’*’+clash.away] = roll(p.winP, p.drawP);
+});
+var sim = {};
+TOP6.forEach(function(t) {
+var cum = 0;
+sim[t.abbr] = FX[t.abbr].map(function(fx) {
+var h2hKey = ‘’;
+TOP4_H2H.forEach(function(clash) {
+if (clash.home===t.abbr && clash.away===fx.oppAbbr) h2hKey=clash.home+’*’+clash.away;
+if (clash.away===t.abbr && clash.home===fx.oppAbbr) h2hKey=clash.home+’*’+clash.away;
+});
+var res;
+if (h2hKey) {
+var hr = h2hResults[h2hKey];
+res = t.abbr===h2hKey.split(’*’)[0] ? hr : (hr===‘W’?‘L’:hr===‘L’?‘W’:‘D’);
+} else {
+var p = probs(t.abbr, fx);
+res = roll(p.winP, p.drawP);
 }
- 
+cum += res===‘W’?3:res===‘D’?1:0;
+var pp = probs(t.abbr, fx);
+return { res:res, cum:cum, winP:Math.round(pp.winP), drawP:Math.round(pp.drawP) };
+});
+});
+setState({ sim:sim, ran:true });
+}
+
 function renderRunIn() {
-  var sim = state.sim; var ran = state.ran;
- 
-  var cards = TOP6.map(function(t) {
-    var proj = ran && sim[t.abbr] ? t.pts + sim[t.abbr][sim[t.abbr].length-1].cum : null;
-    var inj = INJURIES[t.abbr];
-    return '<div style="background:#0c1018;border:1px solid #181e28;padding:12px 14px;border-top:2px solid '+t.color+'">'
-      +'<div style="font-size:0.58rem;color:#555;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:3px">Current</div>'
-      +'<div style="font-family:Georgia,serif;font-size:1.5rem;font-weight:900;color:#c9a84c">'+t.pts+'<span style="font-size:0.6rem;color:#555;margin-left:3px">pts</span></div>'
-      +'<div style="font-size:0.78rem;font-weight:600">'+t.name+'</div>'
-      +(inj?'<div style="font-size:0.56rem;color:#ff6d00;margin-top:2px">🚑 '+inj.players[0].split('(')[0].trim()+'…</div>':'')
-      +(proj!==null?'<div style="font-size:0.68rem;color:#69f0ae;margin-top:3px">Proj: '+proj+'</div>':'')
-      +'</div>';
-  }).join('');
- 
-  var tables = TOP6.map(function(team) {
-    var res = sim[team.abbr];
-    var a = ADV[team.abbr] || {};
-    var resBoxes = res
-      ? res.map(function(r){ return colorBox(r.res); }).join('')
-        +'<span style="margin-left:6px;font-family:Georgia,serif;font-size:1rem;font-weight:700;color:#c9a84c">+'+(res[res.length-1].cum)+'</span>'
-      : '';
- 
-    var rows = FX[team.abbr].map(function(fx,i) {
-      var r = res?res[i]:null;
-      var diff = DiffBadge({s:OPP[fx.oppAbbr]||50});
-      var resCell = r
-        ? '<span style="display:inline-block;padding:2px 8px;font-size:0.63rem;font-weight:700;background:'+(r.res==='W'?'rgba(0,230,118,0.15)':r.res==='D'?'rgba(255,215,64,0.15)':'rgba(255,23,68,0.12)')+';color:'+(r.res==='W'?'#00e676':r.res==='D'?'#ffd740':'#ff1744')+'">'+r.res+' +'+(r.res==='W'?3:r.res==='D'?1:0)+'</span>'
-        : '<span style="color:#333;font-size:0.63rem">pending</span>';
-      var winCell = r?'<span style="color:#69f0ae;font-size:0.63rem">'+r.winP+'%</span><span style="color:#333;font-size:0.58rem"> / '+r.drawP+'%</span>':'<span style="color:#222">-</span>';
- 
-      return '<div style="display:grid;grid-template-columns:28px 56px 16px 1fr 56px 72px 72px 72px;padding:7px 12px;border-bottom:1px solid #0d1117;align-items:center;background:'+(fx.big?'rgba(201,168,76,0.03)':'transparent')+'">'
-        +'<div style="font-size:0.63rem;color:#555">'+fx.md+'</div>'
-        +'<div style="font-size:0.63rem;color:#555">'+fx.date+'</div>'
-        +'<div style="font-size:0.65rem">'+(fx.big?'🔥':'')+'</div>'
-        +'<div style="font-size:0.8rem;font-weight:500">'+fx.opp+'</div>'
-        +'<div><span style="font-size:0.56rem;padding:2px 5px;background:'+(fx.h?'rgba(0,230,118,0.1)':'rgba(255,109,0,0.1)')+';color:'+(fx.h?'#00e676':'#ff6d00')+'">'+(fx.h?'HOME':'AWAY')+'</span></div>'
-        +'<div style="text-align:center">'+diff+'</div>'
-        +'<div style="text-align:center">'+winCell+'</div>'
-        +'<div style="text-align:center">'+resCell+'</div>'
-        +'</div>';
-    }).join('');
- 
-    return '<div style="background:#0c1018;border:1px solid #181e28;margin-bottom:12px;overflow:hidden">'
-      +'<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:#0e1318;border-bottom:1px solid #151b25">'
-      +'<div style="width:3px;height:32px;background:'+team.color+';flex-shrink:0"></div>'
-      +'<div style="flex:1"><div style="font-family:Georgia,serif;font-size:0.95rem;font-weight:700">'+team.name+'</div>'
-      +'<div style="font-size:0.63rem;color:#555">'+team.pts+'pts'+(a.xG?' xG '+a.xG:'')+(a.str?' Str '+a.str:'')+'</div></div>'
-      +(res?'<div style="display:flex;gap:3px;align-items:center">'+resBoxes+'</div>':'')
-      +'</div>'
-      +'<div style="display:grid;grid-template-columns:28px 56px 16px 1fr 56px 72px 72px 72px;font-size:0.56rem;color:#333;padding:4px 12px;border-bottom:1px solid #0f1419;letter-spacing:0.07em;text-transform:uppercase">'
-      +'<div>MD</div><div>Date</div><div></div><div>Opponent</div><div>Venue</div><div style="text-align:center">Diff</div><div style="text-align:center">Win%</div><div style="text-align:center">Result</div>'
-      +'</div>'+rows+'</div>';
-  }).join('');
- 
-  return '<div>'
-    +'<div style="font-family:Georgia,serif;font-size:1.25rem;font-weight:700;margin-bottom:3px">Title Race &amp; Champions League Run-In</div>'
-    +'<div style="font-size:0.7rem;color:#555;margin-bottom:16px">MD31 - 8 games remaining</div>'
-    +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px">'+cards+'</div>'
-    +'<div style="text-align:center;margin-bottom:16px"><button class="B" data-action="runin">'+(ran?'Resimulate':'Simulate Run-In')+'</button></div>'
-    +tables+'</div>';
+var sim = state.sim; var ran = state.ran;
+var cards = TOP6.map(function(t) {
+var proj = ran && sim[t.abbr] ? t.pts + sim[t.abbr][sim[t.abbr].length-1].cum : null;
+var inj = INJURIES[t.abbr];
+return ‘<div style="background:#0c1018;border:1px solid #181e28;padding:12px 14px;border-top:2px solid '+t.color+'">’
++’<div style="font-size:0.58rem;color:#555;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:3px">Current</div>’
++’<div style="font-family:Georgia,serif;font-size:1.5rem;font-weight:900;color:#c9a84c">’+t.pts+’<span style="font-size:0.6rem;color:#555;margin-left:3px">pts</span></div>’
++’<div style="font-size:0.78rem;font-weight:600">’+t.name+’</div>’
++(inj?’<div style="font-size:0.56rem;color:#ff6d00;margin-top:2px">🚑 ‘+inj.players[0].split(’(’)[0].trim()+’…</div>’:’’)
++(proj!==null?’<div style="font-size:0.68rem;color:#69f0ae;margin-top:3px">Proj: ‘+proj+’</div>’:’’)
++’</div>’;
+}).join(’’);
+
+var tables = TOP6.map(function(team) {
+var res = sim[team.abbr];
+var a = ADV[team.abbr] || {};
+var resBoxes = res ? res.map(function(r){ return colorBox(r.res); }).join(’’)
++’<span style="margin-left:6px;font-family:Georgia,serif;font-size:1rem;font-weight:700;color:#c9a84c">+’+(res[res.length-1].cum)+’</span>’ : ‘’;
+var rows = FX[team.abbr].map(function(fx,i) {
+var r = res?res[i]:null;
+var diff = DiffBadge({s:OPP[fx.oppAbbr]||50});
+var resCell = r
+?’<span style="display:inline-block;padding:2px 8px;font-size:0.63rem;font-weight:700;background:'+(r.res==='W'?'rgba(0,230,118,0.15)':r.res==='D'?'rgba(255,215,64,0.15)':'rgba(255,23,68,0.12)')+';color:'+(r.res==='W'?'#00e676':r.res==='D'?'#ffd740':'#ff1744')+'">’+r.res+’ +’+(r.res===‘W’?3:r.res===‘D’?1:0)+’</span>’
+:’<span style="color:#333;font-size:0.63rem">pending</span>’;
+var winCell = r?’<span style="color:#69f0ae;font-size:0.63rem">’+r.winP+’%</span><span style="color:#333;font-size:0.58rem"> / ‘+r.drawP+’%</span>’:’<span style="color:#222">-</span>’;
+return ‘<div style="display:grid;grid-template-columns:28px 56px 16px 1fr 56px 72px 72px 72px;padding:7px 12px;border-bottom:1px solid #0d1117;align-items:center;background:'+(fx.big?'rgba(201,168,76,0.03)':'transparent')+'">’
++’<div style="font-size:0.63rem;color:#555">’+fx.md+’</div>’
++’<div style="font-size:0.63rem;color:#555">’+fx.date+’</div>’
++’<div style="font-size:0.65rem">’+(fx.big?’🔥’:’’)+’</div>’
++’<div style="font-size:0.8rem;font-weight:500">’+fx.opp+’</div>’
++’<div><span style="font-size:0.56rem;padding:2px 5px;background:'+(fx.h?'rgba(0,230,118,0.1)':'rgba(255,109,0,0.1)')+';color:'+(fx.h?'#00e676':'#ff6d00')+'">’+(fx.h?‘HOME’:‘AWAY’)+’</span></div>’
++’<div style="text-align:center">’+diff+’</div>’
++’<div style="text-align:center">’+winCell+’</div>’
++’<div style="text-align:center">’+resCell+’</div>’
++’</div>’;
+}).join(’’);
+return ‘<div style="background:#0c1018;border:1px solid #181e28;margin-bottom:12px;overflow:hidden">’
++’<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:#0e1318;border-bottom:1px solid #151b25">’
++’<div style="width:3px;height:32px;background:'+team.color+';flex-shrink:0"></div>’
++’<div style="flex:1"><div style="font-family:Georgia,serif;font-size:0.95rem;font-weight:700">’+team.name+’</div>’
++’<div style="font-size:0.63rem;color:#555">’+team.pts+‘pts’+(a.xG?’ xG ‘+a.xG:’’)+(a.str?’ Str ‘+a.str:’’)+’</div></div>’
++(res?’<div style="display:flex;gap:3px;align-items:center">’+resBoxes+’</div>’:’’)
++’</div>’
++’<div style="display:grid;grid-template-columns:28px 56px 16px 1fr 56px 72px 72px 72px;font-size:0.56rem;color:#333;padding:4px 12px;border-bottom:1px solid #0f1419;letter-spacing:0.07em;text-transform:uppercase">’
++’<div>MD</div><div>Date</div><div></div><div>Opponent</div><div>Venue</div><div style="text-align:center">Diff</div><div style="text-align:center">Win%</div><div style="text-align:center">Result</div>’
++’</div>’+rows+’</div>’;
+}).join(’’);
+
+return ‘<div>’
++’<div style="font-family:Georgia,serif;font-size:1.25rem;font-weight:700;margin-bottom:3px">Title Race & Champions League Run-In</div>’
++’<div style="font-size:0.7rem;color:#555;margin-bottom:16px">MD31 - 8 games remaining</div>’
++’<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px">’+cards+’</div>’
++’<div style="text-align:center;margin-bottom:16px"><button class="B" data-action="runin">’+(ran?‘Resimulate’:‘Simulate Run-In’)+’</button></div>’
++tables+’</div>’;
 }
- 
+
+// – STATS
+
+// – STATS + ADVANCED STATS (merged tab)
 function renderStats() {
-  var metrics = [{key:'xG',label:'xG / game'},{key:'xGA',label:'xGA / game'},{key:'shots',label:'Shots / game'},{key:'str',label:'Str Rating'}];
- 
-  var bars = metrics.map(function(m) {
-    var vals = TOP4.map(function(t){ return ADV[t.abbr][m.key]; });
-    var mx = Math.max.apply(null,vals); var mn2 = Math.min.apply(null,vals);
-    var cols = TOP4.map(function(t) {
-      var v = ADV[t.abbr][m.key];
-      var pct = mx===mn2?50:(v-mn2)/(mx-mn2)*100;
-      return '<div style="background:#0c1018;border:1px solid #181e28;padding:13px">'
-        +'<div style="font-size:0.56rem;color:#555;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px">'+t.name+'</div>'
-        +'<div style="font-family:Georgia,serif;font-size:1.3rem;font-weight:700;color:'+t.color+';margin-bottom:6px">'+v+'</div>'
-        +'<div style="height:4px;background:#1a1e24;border-radius:2px"><div style="width:'+Math.round(pct)+'%;height:100%;background:'+t.color+';border-radius:2px"></div></div>'
-        +'</div>';
-    }).join('');
-    return '<div style="margin-bottom:12px"><div style="font-size:0.6rem;color:#c9a84c;letter-spacing:0.15em;text-transform:uppercase;margin-bottom:6px">'+m.label+'</div>'
-      +'<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">'+cols+'</div></div>';
-  }).join('');
- 
-  var statCards = TOP4.map(function(t) {
-    var a = ADV[t.abbr]; var td = TDATA[t.abbr];
-    return '<div style="background:#0c1018;border:1px solid #181e28;overflow:hidden">'
-      +'<div style="padding:10px 14px;border-top:3px solid '+t.color+';border-bottom:1px solid #151b25">'
-      +'<div style="font-family:Georgia,serif;font-size:0.95rem;font-weight:700">'+t.name+'</div></div>'
-      +'<div style="padding:10px 14px;font-size:0.72rem;display:grid;gap:4px">'
-      +'<div style="display:flex;justify-content:space-between"><span style="color:#555">xG/game</span><span style="color:#69f0ae">'+a.xG+'</span></div>'
-      +'<div style="display:flex;justify-content:space-between"><span style="color:#555">xGA/game</span><span style="color:'+(a.xGA<0.9?'#69f0ae':'#ffd740')+'">'+a.xGA+'</span></div>'
-      +'<div style="display:flex;justify-content:space-between"><span style="color:#555">Shots/game</span><span>'+a.shots+'</span></div>'
-      +'<div style="display:flex;justify-content:space-between"><span style="color:#555">PPDA</span><span>'+td.ppda+'</span></div>'
-      +'<div style="display:flex;justify-content:space-between"><span style="color:#555">Style</span><span style="color:#c9a84c">'+td.block+'</span></div>'
-      +'<div style="display:flex;justify-content:space-between"><span style="color:#555">Str Rating</span><span style="font-weight:600">'+a.str+'</span></div>'
-      +'</div></div>';
-  }).join('');
- 
-  return '<div><div style="font-family:Georgia,serif;font-size:1.25rem;font-weight:700;margin-bottom:16px">Advanced Statistics</div>'
-    +bars+'<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px">'+statCards+'</div></div>';
+var a = ADV;
+
+// ── Section 1: Top-4 xG profile bars
+var metrics = [
+{key:‘xG’,  label:‘xG / game’,   lo:false},
+{key:‘xGA’, label:‘xGA / game’,  lo:true},
+{key:‘shots’,label:‘Shots / game’,lo:false},
+{key:‘str’, label:‘Str Rating’,  lo:false},
+];
+var bars = metrics.map(function(m) {
+var vals = TOP4.map(function(t){ return a[t.abbr][m.key]; });
+var mx = Math.max.apply(null,vals); var mn2 = Math.min.apply(null,vals);
+var cols = TOP4.map(function(t) {
+var v = a[t.abbr][m.key];
+var pct = mx===mn2?50:(v-mn2)/(mx-mn2)*100;
+return ‘<div style="background:#0c1018;border:1px solid #181e28;padding:13px">’
++’<div style="font-size:0.56rem;color:#555;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px">’+t.name+’</div>’
++’<div style="font-family:Georgia,serif;font-size:1.3rem;font-weight:700;color:'+t.color+';margin-bottom:6px">’+v+’</div>’
++’<div style="height:4px;background:#1a1e24;border-radius:2px"><div style="width:'+Math.round(pct)+'%;height:100%;background:'+t.color+';border-radius:2px"></div></div>’
++’</div>’;
+}).join(’’);
+return ‘<div style="margin-bottom:10px">’
++’<div style="font-size:0.6rem;color:#c9a84c;letter-spacing:0.15em;text-transform:uppercase;margin-bottom:6px">’+m.label+’</div>’
++’<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">’+cols+’</div></div>’;
+}).join(’’);
+
+// ── Section 2: Top-4 profile cards
+var statCards = TOP4.map(function(t) {
+var av = a[t.abbr]; var td = TDATA[t.abbr];
+return ‘<div style="background:#0c1018;border:1px solid #181e28;overflow:hidden">’
++’<div style="padding:10px 14px;border-top:3px solid '+t.color+';border-bottom:1px solid #151b25">’
++’<div style="font-family:Georgia,serif;font-size:0.95rem;font-weight:700">’+t.name+’</div></div>’
++’<div style="padding:10px 14px;font-size:0.72rem;display:grid;gap:4px">’
++’<div style="display:flex;justify-content:space-between"><span style="color:#555">xG/game</span><span style="color:#69f0ae">’+av.xG+’</span></div>’
++’<div style="display:flex;justify-content:space-between"><span style="color:#555">xGA/game</span><span style="color:'+(av.xGA<0.9?'#69f0ae':'#ffd740')+'">’+av.xGA+’</span></div>’
++’<div style="display:flex;justify-content:space-between"><span style="color:#555">Shots/game</span><span>’+av.shots+’</span></div>’
++’<div style="display:flex;justify-content:space-between"><span style="color:#555">PPDA</span><span>’+td.ppda+’</span></div>’
++’<div style="display:flex;justify-content:space-between"><span style="color:#555">Style</span><span style="color:#c9a84c">’+td.block+’</span></div>’
++’<div style="display:flex;justify-content:space-between"><span style="color:#555">Str Rating</span><span style="font-weight:600">’+av.str+’</span></div>’
++’</div></div>’;
+}).join(’’);
+
+// ── Section 3: All-20 team cards (replaces the broken wide table)
+function cellColor(key, val, lo) {
+var vals = STATS20.map(function(t){ return t[key]; });
+var mn = Math.min.apply(null,vals); var mx = Math.max.apply(null,vals);
+var pct = mx===mn ? 0.5 : (val-mn)/(mx-mn);
+if (lo) pct = 1 - pct;
+if (pct >= 0.8) return ‘#00e676’;
+if (pct >= 0.6) return ‘#69f0ae’;
+if (pct >= 0.4) return ‘#ffd740’;
+if (pct >= 0.2) return ‘#ff6d00’;
+return ‘#ff1744’;
 }
- 
-function renderTactics() {
-  var ppda_sorted = Object.keys(TDATA).map(function(k){ return {abbr:k,ppda:TDATA[k].ppda,block:TDATA[k].block}; }).sort(function(a,b){ return a.ppda-b.ppda; });
- 
-  var ppda_rows = ppda_sorted.map(function(t,i) {
-    var team = TEAMS.find(function(x){ return x.abbr===t.abbr; });
-    var bar_pct = Math.round((t.ppda-7)/(17-7)*100);
-    return '<div style="display:flex;align-items:center;gap:8px;padding:5px 10px;border-bottom:1px solid #0d1117">'
-      +'<div style="font-size:0.6rem;color:#555;width:16px">'+(i+1)+'</div>'
-      +'<div style="font-size:0.72rem;flex:1;font-weight:'+(i<4?'600':'400')+';color:'+(i<4?'#e0d8cc':'#999')+'">'+(team?team.name:t.abbr)+'</div>'
-      +'<div style="width:80px;height:4px;background:#1a1e24;border-radius:2px"><div style="width:'+bar_pct+'%;height:100%;background:'+(t.ppda<9?'#ff1744':t.ppda<12?'#ffd740':'#444')+';border-radius:2px"></div></div>'
-      +'<div style="font-size:0.72rem;color:#c9a84c;width:36px;text-align:right">'+t.ppda+'</div>'
-      +'<div style="font-size:0.58rem;color:#555;width:80px;text-align:right">'+t.block+'</div>'
-      +'</div>';
-  }).join('');
- 
-  var bkKeys = ['high','medium','low']; var bkL = {high:'High Press',medium:'Med Press',low:'Low Block'};
-  var matrixHeader = '<div style="display:grid;grid-template-columns:100px repeat(3,1fr);gap:2px;margin-bottom:4px"><div style="font-size:0.52rem;color:#444">Attacker / Def</div>'
-    +bkKeys.map(function(k){ return '<div style="font-size:0.58rem;color:#888;text-align:center">vs '+bkL[k]+'</div>'; }).join('')+'</div>';
- 
-  var matrixRows = bkKeys.map(function(atk) {
-    return '<div style="display:grid;grid-template-columns:100px repeat(3,1fr);gap:2px;margin-bottom:6px">'
-      +'<div style="font-size:0.62rem;color:#c9a84c;display:flex;align-items:center">'+bkL[atk]+'</div>'
-      +bkKeys.map(function(def) {
-        // FIX #1: use _vs_ separator to match BLOCK_MU keys
-        var mu = BLOCK_MU[atk+'_vs_'+def] || {label:'',gm:1.0};
-        var col = mu.gm>1.05?'#00e676':mu.gm<0.95?'#ff1744':'#ffd740';
-        return '<div style="background:#0c1018;border:1px solid #181e28;padding:8px;text-align:center">'
-          +'<div style="font-size:0.6rem;color:'+col+';font-weight:600">'+mu.label+'</div>'
-          +'<div style="font-size:0.54rem;color:#555">x'+mu.gm+'</div></div>';
-      }).join('')+'</div>';
-  }).join('');
- 
-  return '<div><div style="font-family:Georgia,serif;font-size:1.25rem;font-weight:700;margin-bottom:16px">Tactical Analysis</div>'
-    +'<div style="background:#0c1018;border:1px solid #181e28;padding:14px 16px;margin-bottom:12px">'
-    +'<div style="font-size:0.58rem;color:#c9a84c;letter-spacing:0.14em;text-transform:uppercase;margin-bottom:10px">PPDA League Table</div>'+ppda_rows+'</div>'
-    +'<div style="background:#0c1018;border:1px solid #181e28;padding:14px 16px">'
-    +'<div style="font-size:0.58rem;color:#c9a84c;letter-spacing:0.14em;text-transform:uppercase;margin-bottom:10px">Block Matchup Matrix</div>'
-    +matrixHeader+matrixRows+'</div></div>';
+
+function blockBadge(b) {
+var col = b===‘High Press’?’#ff1744’:b===‘Med Press’?’#ffd740’:b===‘Low Block’?’#4fc3f7’:b===‘Hybrid’?’#ce93d8’:’#aaa’;
+return ‘<span style="display:inline-block;padding:1px 5px;font-size:0.5rem;font-weight:700;background:'+col+'22;color:'+col+';border:1px solid '+col+'44;border-radius:2px">’+b+’</span>’;
 }
- 
+
+// Sort by PPDA ascending (best press first)
+var sorted20 = STATS20.slice().sort(function(a,b){ return a.ppda - b.ppda; });
+
+var teamCards = sorted20.map(function(t, i) {
+var stats = [
+{k:‘ppda’,  lo:true,  label:‘PPDA’,    val:t.ppda},
+{k:‘xg’,    lo:false, label:‘xG’,      val:t.xg},
+{k:‘xga’,   lo:true,  label:‘xGA’,     val:t.xga},
+{k:‘shots’, lo:false, label:‘Shots’,   val:t.shots},
+{k:‘poss’,  lo:false, label:‘Poss%’,   val:t.poss+’%’},
+{k:‘tkl’,   lo:false, label:‘Tkl’,     val:t.tkl},
+{k:‘trn’,   lo:false, label:‘TO’,      val:t.trn},
+{k:‘fouls’, lo:false, label:‘Fouls’,   val:t.fouls},
+];
+var statPills = stats.map(function(s) {
+var col = cellColor(s.k, typeof s.val===‘string’?parseFloat(s.val):s.val, s.lo);
+return ‘<div style="display:flex;flex-direction:column;align-items:center;min-width:36px">’
++’<div style="font-size:0.48rem;color:#444;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:2px">’+s.label+’</div>’
++’<div style="font-size:0.7rem;font-weight:700;color:'+col+'">’+s.val+’</div>’
++’</div>’;
+}).join(’’);
+return ‘<div style="background:#0c1018;border:1px solid #181e28;border-left:3px solid '+t.color+';padding:8px 12px">’
++’<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">’
++’<div style="font-size:0.75rem;font-weight:600">’+t.name+’</div>’
++blockBadge(t.block)
++’</div>’
++’<div style="display:flex;gap:8px;flex-wrap:nowrap;overflow-x:auto">’+statPills+’</div>’
++’</div>’;
+}).join(’’);
+
+// Block distribution
+var blockGroups = {};
+STATS20.forEach(function(t){ if(!blockGroups[t.block]) blockGroups[t.block]=[]; blockGroups[t.block].push(t); });
+var blockDist = Object.keys(blockGroups).map(function(b) {
+var col = b===‘High Press’?’#ff1744’:b===‘Med Press’?’#ffd740’:b===‘Low Block’?’#4fc3f7’:b===‘Hybrid’?’#ce93d8’:’#aaa’;
+var teams = blockGroups[b].map(function(t){ return t.abbr; }).join(’, ‘);
+var pct = Math.round(blockGroups[b].length / 20 * 100);
+return ‘<div style="background:#0c1018;border:1px solid #181e28;padding:8px 12px;border-top:2px solid '+col+'">’
++’<div style="font-size:0.62rem;font-weight:700;color:'+col+'">’+b+’ - ‘+blockGroups[b].length+’ teams (’+pct+’%)</div>’
++’<div style="height:3px;background:#1a1e24;border-radius:2px;margin:5px 0"><div style="width:'+pct+'%;height:100%;background:'+col+';border-radius:2px"></div></div>’
++’<div style="font-size:0.54rem;color:#555">’+teams+’</div>’
++’</div>’;
+}).join(’’);
+
+return ‘<div>’
++’<div style="font-family:Georgia,serif;font-size:1.25rem;font-weight:700;margin-bottom:3px">Statistics</div>’
++’<div style="font-size:0.65rem;color:#555;margin-bottom:14px">Top-4 Opta/StatsUltra xG - All-20 AiScore MD30</div>’
+
+```
++'<div style="font-size:0.56rem;color:#c9a84c;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:8px">Top-4 xG Profile</div>'
++bars
++'<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:20px">'+statCards+'</div>'
+
++'<div style="font-size:0.56rem;color:#c9a84c;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:8px">Block Style Distribution</div>'
++'<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:16px">'+blockDist+'</div>'
+
++'<div style="font-size:0.56rem;color:#c9a84c;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:8px">All 20 Teams - Sorted by PPDA (Sources: Statsbomb/Opta/AiScore MD30)</div>'
++'<div style="display:grid;grid-template-columns:1fr;gap:6px">'+teamCards+'</div>'
++'<div style="font-size:0.54rem;color:#333;margin-top:8px">Color: green=best, red=worst in league. PPDA: lower=more aggressive press.</div>'
++'</div>';
+```
+
+}
+
+// ── SIMULATOR
+
 function buildSelect(id, val) {
-  return '<select class="S" id="'+id+'" data-action="selchange">'
-    +TEAMS.map(function(t){ return '<option value="'+t.abbr+'"'+(t.abbr===val?' selected':'')+'>'+esc(t.name)+'</option>'; }).join('')
-    +'</select>';
+return ‘<select class="S" id="'+id+'" data-action="selchange">’
++TEAMS.map(function(t){ return ‘<option value=”’+t.abbr+’”’+(t.abbr===val?’ selected’:’’)+’>’+esc(t.name)+’</option>’; }).join(’’)
++’</select>’;
 }
- 
+// onSel via delegation
 function doKickOff() {
-  if (state.home===state.away||state.playing) return;
-  var m = h2h(state.home, state.away);
-  state.match=m; state.evs=[]; state.score={h:0,a:0}; state.playing=true; state.fin=false;
-  render();
- 
-  var i=0;
-  playInterval = setInterval(function() {
-    if (i>=m.evs.length) {
-      clearInterval(playInterval);
-      setTimeout(function() {
-        state.fin=true; state.playing=false;
-        state.hist=[{home:m.hTeam.name,away:m.aTeam.name,hG:m.hG,aG:m.aG}].concat(state.hist.slice(0,4));
-        render();
-      },600);
-      return;
-    }
-    var ev=m.evs[i]; state.evs=state.evs.concat([ev]);
-    if(ev.type==='goal') state.score={h:ev.hS,a:ev.aS};
-    i++;
-    var feed=document.getElementById('feed');
-    var sc=document.getElementById('ls');
-    if(sc) sc.textContent=state.score.h+' - '+state.score.a;
-    if(feed){
-      feed.innerHTML=state.evs.map(function(ev){
-        return '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:'+(ev.type==='goal'?'rgba(201,168,76,0.06)':'#0c1018')+';border:1px solid '+(ev.type==='goal'?'#c9a84c22':'#12161c')+';margin-bottom:2px">'
-          +'<span>'+(ev.type==='goal'?'⚽':'🟨')+'</span>'
-          +'<span style="font-size:0.75rem">'+esc(ev.type==='goal'?ev.scorer+' ('+ev.min+"')":ev.team+' ('+ev.min+"')")+'</span></div>';
-      }).join('');
-      feed.scrollTop=feed.scrollHeight;
-    }
-  },850);
+if (state.home===state.away||state.playing) return;
+var m = h2h(state.home, state.away);
+state.match=m; state.evs=[]; state.score={h:0,a:0}; state.playing=true; state.fin=false;
+render();
+var i=0;
+playInterval = setInterval(function() {
+if (i>=m.evs.length) {
+clearInterval(playInterval);
+setTimeout(function() {
+state.fin=true; state.playing=false;
+state.hist=[{home:m.hTeam.name,away:m.aTeam.name,hG:m.hG,aG:m.aG}].concat(state.hist.slice(0,4));
+render();
+},600);
+return;
 }
- 
+var ev=m.evs[i]; state.evs=state.evs.concat([ev]);
+if(ev.type===‘goal’) state.score={h:ev.hS,a:ev.aS};
+i++;
+var feed=document.getElementById(‘feed’);
+var sc=document.getElementById(‘ls’);
+if(sc) sc.textContent=state.score.h+’ - ‘+state.score.a;
+if(feed){
+feed.innerHTML=state.evs.map(function(ev){
+return ‘<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:'+(ev.type==='goal'?'rgba(201,168,76,0.06)':'#0c1018')+';border:1px solid '+(ev.type==='goal'?'#c9a84c22':'#12161c')+';margin-bottom:2px">’
++’<span>’+(ev.type===‘goal’?’⚽’:’🟨’)+’</span>’
++’<span style="font-size:0.75rem">’+esc(ev.type===‘goal’?ev.scorer+’ (’+ev.min+”’)”:ev.team+’ (’+ev.min+”’)”)+’</span></div>’;
+}).join(’’);
+feed.scrollTop=feed.scrollHeight;
+}
+},850);
+}
 function renderSimulator() {
-  var hT=TEAMS.find(function(t){ return t.abbr===state.home; });
-  var aT=TEAMS.find(function(t){ return t.abbr===state.away; });
-  var hM=getMomentum(hT.form); var aM=getMomentum(aT.form);
- 
-  var preProbs='';
-  if(!state.match&&hT.abbr!==aT.abbr){
-    var pp=probs(state.home,{oppAbbr:state.away,h:true,md:99});
-    preProbs='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:12px">'
-      +[['Win',Math.round(pp.winP),'#00e676'],['Draw',Math.round(pp.drawP),'#ffd740'],['Loss',Math.round(pp.lossP),'#ff1744']].map(function(x){
-        return '<div style="background:#0c1018;border:1px solid #181e28;padding:10px;text-align:center">'
-          +'<div style="font-size:0.54rem;color:#555;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px">'+x[0]+'</div>'
-          +'<div style="font-family:Georgia,serif;font-size:1.4rem;font-weight:700;color:'+x[2]+'">'+x[1]+'%</div></div>';
-      }).join('')+'</div>';
-  }
- 
-  var matchArea='';
-  if(state.match){
-    matchArea='<div style="background:#0c1018;border:1px solid #181e28;padding:18px 20px;margin-bottom:8px;text-align:center">'
-      +'<div style="font-size:0.6rem;color:#555;margin-bottom:4px">'+(state.fin?'Full Time':'<span class="pulse" style="color:#ff1744;font-size:0.7rem">LIVE</span>')+'</div>'
-      +'<div style="font-family:Georgia,serif;font-size:3rem;font-weight:900;color:#c9a84c" id="ls">'+state.score.h+' - '+state.score.a+'</div>'
-      +'<div style="font-size:0.72rem;color:#555;margin-top:4px">'+esc(state.match.hTeam.name)+' vs '+esc(state.match.aTeam.name)+'</div>'
-      +'<div style="font-size:0.6rem;color:#444;margin-top:6px">'+state.match.tacticLabel+'</div></div>'
-      +'<div id="feed" style="max-height:220px;overflow-y:auto;margin-bottom:8px"></div>';
-  }
- 
-  var histRows = state.hist.length?state.hist.map(function(h){
-    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 10px;border-bottom:1px solid #0d1117;font-size:0.7rem">'
-      +'<span style="color:#888">'+esc(h.home)+'</span><span style="color:#c9a84c;font-weight:700">'+h.hG+' - '+h.aG+'</span><span style="color:#888">'+esc(h.away)+'</span></div>';
-  }).join(''):'';
- 
-  return '<div><div style="font-family:Georgia,serif;font-size:1.25rem;font-weight:700;margin-bottom:16px">H2H Simulator</div>'
-    +'<div style="display:grid;grid-template-columns:1fr 40px 1fr;gap:8px;align-items:end;margin-bottom:12px">'
-    +'<div>'+buildSelect('sh',state.home)+'</div>'
-    +'<div style="text-align:center;font-size:0.7rem;color:#555;padding-bottom:10px">vs</div>'
-    +'<div>'+buildSelect('sa',state.away)+'</div></div>'
-    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">'
-    +[{t:hT,m:hM},{t:aT,m:aM}].map(function(x){
-      return '<div style="background:#0c1018;border:1px solid #181e28;padding:10px">'
-        +'<div style="font-size:0.6rem;color:#555;margin-bottom:4px">'+esc(x.t.name)+'</div>'
-        +'<div style="display:flex;gap:3px;margin-bottom:4px">'+x.t.form.map(colorBox).join('')+'</div>'
-        +'<div style="font-size:0.65rem;color:'+x.m.color+'">'+x.m.emoji+' '+x.m.label+'</div></div>';
-    }).join('')+'</div>'
-    +preProbs
-    +'<div style="text-align:center;margin-bottom:14px">'
-    +'<button class="B" data-action="kickoff" '+(state.home===state.away||state.playing?'disabled':'')+'>'
-    +(state.playing?'Live…':state.fin?'Replay':'Kick Off')+'</button></div>'
-    +matchArea
-    +(state.hist.length?'<div style="background:#0c1018;border:1px solid #181e28;margin-top:8px"><div style="padding:8px 10px;font-size:0.58rem;color:#555;letter-spacing:0.1em;text-transform:uppercase;border-bottom:1px solid #151b25">Match History</div>'+histRows+'</div>':'')
-    +'</div>';
+var hT=TEAMS.find(function(t){ return t.abbr===state.home; });
+var aT=TEAMS.find(function(t){ return t.abbr===state.away; });
+var hM=getMomentum(hT.form); var aM=getMomentum(aT.form);
+var preProbs=’’;
+if(!state.match&&hT.abbr!==aT.abbr){
+var pp=probs(state.home,{oppAbbr:state.away,h:true,md:99});
+preProbs=’<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:12px">’
++[[‘Win’,Math.round(pp.winP),’#00e676’],[‘Draw’,Math.round(pp.drawP),’#ffd740’],[‘Loss’,Math.round(pp.lossP),’#ff1744’]].map(function(x){
+return ‘<div style="background:#0c1018;border:1px solid #181e28;padding:10px;text-align:center">’
++’<div style="font-size:0.54rem;color:#555;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px">’+x[0]+’</div>’
++’<div style="font-family:Georgia,serif;font-size:1.4rem;font-weight:700;color:'+x[2]+'">’+x[1]+’%</div></div>’;
+}).join(’’)+’</div>’;
 }
- 
+var matchArea=’’;
+if(state.match){
+matchArea=’<div style="background:#0c1018;border:1px solid #181e28;padding:18px 20px;margin-bottom:8px;text-align:center">’
++’<div style="font-size:0.6rem;color:#555;margin-bottom:4px">’+(state.fin?‘Full Time’:’<span class="pulse" style="color:#ff1744;font-size:0.7rem">LIVE</span>’)+’</div>’
++’<div style="font-family:Georgia,serif;font-size:3rem;font-weight:900;color:#c9a84c" id="ls">’+state.score.h+’ - ‘+state.score.a+’</div>’
++’<div style="font-size:0.72rem;color:#555;margin-top:4px">’+esc(state.match.hTeam.name)+’ vs ‘+esc(state.match.aTeam.name)+’</div>’
++’<div style="font-size:0.6rem;color:#444;margin-top:6px">’+state.match.tacticLabel+’</div>’
++(state.match.pressNote ? ‘<div style="font-size:0.56rem;color:#555;margin-top:3px">’+state.match.pressNote+’</div>’ : ‘’)
++’</div>’
++’<div id="feed" style="max-height:220px;overflow-y:auto;margin-bottom:8px"></div>’;
+}
+var histRows = state.hist.length?state.hist.map(function(h){
+return ‘<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 10px;border-bottom:1px solid #0d1117;font-size:0.7rem">’
++’<span style="color:#888">’+esc(h.home)+’</span><span style="color:#c9a84c;font-weight:700">’+h.hG+’ - ‘+h.aG+’</span><span style="color:#888">’+esc(h.away)+’</span></div>’;
+}).join(’’):’’;
+return ‘<div><div style="font-family:Georgia,serif;font-size:1.25rem;font-weight:700;margin-bottom:16px">H2H Simulator</div>’
++’<div style="display:grid;grid-template-columns:1fr 40px 1fr;gap:8px;align-items:end;margin-bottom:12px">’
++’<div>’+buildSelect(‘sh’,state.home)+’</div>’
++’<div style="text-align:center;font-size:0.7rem;color:#555;padding-bottom:10px">vs</div>’
++’<div>’+buildSelect(‘sa’,state.away)+’</div></div>’
++’<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">’
++[{t:hT,m:hM},{t:aT,m:aM}].map(function(x){
+var s20 = STATS20.find(function(s){ return s.abbr===x.t.abbr; }) || {};
+var ppda_col = s20.ppda ? (s20.ppda<9?’#ff1744’:s20.ppda<12?’#ffd740’:’#4fc3f7’) : ‘#555’;
+return ‘<div style="background:#0c1018;border:1px solid #181e28;padding:10px">’
++’<div style="font-size:0.6rem;color:#555;margin-bottom:4px">’+esc(x.t.name)+’</div>’
++’<div style="display:flex;gap:3px;margin-bottom:5px">’+x.t.form.map(colorBox).join(’’)+’</div>’
++’<div style="font-size:0.65rem;color:'+x.m.color+';margin-bottom:4px">’+x.m.emoji+’ ‘+x.m.label+’</div>’
++(s20.ppda ? ‘<div style="display:flex;gap:8px;flex-wrap:wrap">’
++’<span style="font-size:0.56rem;color:#555">PPDA <span style="color:'+ppda_col+'">’+s20.ppda+’</span></span>’
++’<span style="font-size:0.56rem;color:#555">xG <span style="color:#69f0ae">’+s20.xg+’</span></span>’
++’<span style="font-size:0.56rem;color:#555">xGA <span style="color:#ffd740">’+s20.xga+’</span></span>’
++’<span style="font-size:0.56rem;color:#555">Poss <span style="color:#aaa">’+s20.poss+’%</span></span>’
++’</div>’ : ‘’)
++’</div>’;
+}).join(’’)+’</div>’
++preProbs
++’<div style="text-align:center;margin-bottom:14px">’
++’<button class=“B” data-action=“kickoff” ‘+(state.home===state.away||state.playing?‘disabled’:’’)+’>’
++(state.playing?‘Live…’:state.fin?‘Replay’:‘Kick Off’)+’</button></div>’
++matchArea
++(state.hist.length?’<div style="background:#0c1018;border:1px solid #181e28;margin-top:8px"><div style="padding:8px 10px;font-size:0.58rem;color:#555;letter-spacing:0.1em;text-transform:uppercase;border-bottom:1px solid #151b25">Match History</div>’+histRows+’</div>’:’’)
++’</div>’;
+}
+
+// – MONTE CARLO
 function doMC() {
-  setState({mcr:true,mc:null});
-  setTimeout(function(){ setState({mc:mcRun(1000),mcr:false}); },60);
+setState({mcr:true,mc:null});
+setTimeout(function(){ setState({mc:mcRun(1000),mcr:false}); },60);
 }
- 
 function renderMonte() {
-  var mc=state.mc; var mcr=state.mcr;
-  if(mcr) return '<div style="text-align:center;padding:60px 20px"><div class="pulse" style="font-size:2rem;margin-bottom:10px">⚙️</div><div style="font-size:0.75rem;color:#555">Running 1,000 scenarios…</div></div>';
- 
-  var btn='<div style="text-align:center;margin-bottom:20px"><button class="B" data-action="mc">'+(mc?'Re-run 1,000 Scenarios':'Run 1,000 Scenarios')+'</button></div>';
-  if(!mc) return '<div>'+btn+'</div>';
- 
-  var titleSorted=TOP6.slice().sort(function(a,b){ return mc.titles[b.abbr]-mc.titles[a.abbr]; });
-  var maxT=mc.titles[titleSorted[0].abbr];
- 
-  var titleCards=titleSorted.map(function(t,i){
-    var pct=((mc.titles[t.abbr]/mc.n)*100).toFixed(1);
-    var bar=maxT>0?(mc.titles[t.abbr]/maxT)*100:0;
-    return '<div style="background:#0c1018;border:1px solid #181e28;padding:14px 12px;border-top:3px solid '+t.color+';position:relative;overflow:hidden">'
-      +(i===0?'<div style="position:absolute;top:7px;right:8px">🏆</div>':'')
-      +'<div style="font-size:0.54rem;letter-spacing:0.1em;text-transform:uppercase;color:#555;margin-bottom:4px">#'+(i+1)+'</div>'
-      +'<div style="font-size:0.72rem;font-weight:600;margin-bottom:2px">'+t.name+'</div>'
-      +'<div style="font-family:Georgia,serif;font-size:1.6rem;font-weight:900;color:'+t.color+'">'+pct+'%</div>'
-      +'<div style="height:3px;background:#1a1e24;border-radius:2px;margin-top:6px"><div style="width:'+Math.round(bar)+'%;height:100%;background:'+t.color+';border-radius:2px"></div></div>'
-      +'<div style="font-size:0.56rem;color:#444;margin-top:4px">Avg: '+mc.avg[t.abbr]+' pts</div></div>';
-  }).join('');
- 
-  var clSorted=TOP6.slice().sort(function(a,b){ return mc.clSpots[b.abbr]-mc.clSpots[a.abbr]; });
-  var clCards=clSorted.map(function(t,i){
-    var pct=((mc.clSpots[t.abbr]/mc.n)*100).toFixed(1);
-    var safe=parseFloat(pct)>=90; var danger=parseFloat(pct)<40;
-    var col=safe?'#00e676':danger?'#ff6d00':t.color;
-    return '<div style="background:#0c1018;border:1px solid #181e28;padding:10px 12px;border-top:2px solid '+col+'">'
-      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">'
-      +'<div style="font-size:0.7rem;font-weight:600">'+t.name+'</div>'
-      +'<div style="font-family:Georgia,serif;font-size:1rem;font-weight:700;color:'+col+'">'+pct+'%</div></div>'
-      +'<div style="height:3px;background:#1a1e24;border-radius:2px"><div style="width:'+pct+'%;height:100%;background:'+col+';border-radius:2px"></div></div>'
-      +'<div style="font-size:0.56rem;color:#444;margin-top:3px">'+mc.clSpots[t.abbr]+'/1000</div></div>';
-  }).join('');
- 
-  var ptsMax=Math.max.apply(null,TOP6.map(function(t){ return mc.mx[t.abbr]; }));
-  var ptsBars=TOP6.slice().sort(function(a,b){ return mc.avg[b.abbr]-mc.avg[a.abbr]; }).map(function(t){
-    var avgPct=(parseFloat(mc.avg[t.abbr])/ptsMax)*100;
-    var mnPct=(mc.mn[t.abbr]/ptsMax)*100;
-    var mxPct=(mc.mx[t.abbr]/ptsMax)*100;
-    return '<div style="margin-bottom:8px">'
-      +'<div style="display:flex;justify-content:space-between;margin-bottom:3px">'
-      +'<div style="font-size:0.7rem;font-weight:600;color:'+t.color+'">'+t.name+'</div>'
-      +'<div style="font-size:0.65rem;color:#888">'+mc.mn[t.abbr]+' - '+mc.avg[t.abbr]+' - '+mc.mx[t.abbr]+'</div></div>'
-      +'<div style="position:relative;height:6px;background:#1a1e24;border-radius:3px">'
-      +'<div style="position:absolute;left:'+Math.round(mnPct)+'%;width:'+Math.round(mxPct-mnPct)+'%;height:100%;background:'+t.color+'33;border-radius:3px"></div>'
-      +'<div style="position:absolute;left:0;width:'+Math.round(avgPct)+'%;height:100%;background:'+t.color+';border-radius:3px"></div>'
-      +'</div></div>';
-  }).join('');
- 
-  var ourInt=((mc.titles.INT/mc.n)*100).toFixed(0);
-  var ourAcm=((mc.titles.ACM/mc.n)*100).toFixed(0);
-  var ourNap=((mc.titles.NAP/mc.n)*100).toFixed(0);
-  var ourCom=((mc.titles.COM/mc.n)*100).toFixed(0);
- 
-  var benchmarks=[
-    {src:'Our Model',note:'1,000 sims - xG + form + PPDA + H2H',INT:ourInt,ACM:ourAcm,NAP:ourNap,COM:ourCom,live:true},
-    {src:'Opta Analyst',note:'Post-MD30 - xPTS: INT 84.9 / ACM 77.5 / NAP 76.8',INT:'89.3',ACM:'6.0',NAP:'4.0',COM:'~1',live:false},
-    {src:'StatsUltra',note:'Post-MD30 - 15k daily sims - xG ratings',INT:'92.0',ACM:'4.0',NAP:'4.0',COM:'~0',live:false},
-  ];
- 
-  var cols=['#2255aa','#d40000','#0e9aff','#8855cc'];
-  var teamNames=['Inter','Milan','Napoli','Como'];
-  var headerCells=teamNames.map(function(n,i){ return '<div style="font-size:0.58rem;color:'+cols[i]+';text-align:center;padding:3px 0;font-weight:600">'+n+'</div>'; }).join('');
- 
-  var benchRows=benchmarks.map(function(b){
-    var pcts=[b.INT,b.ACM,b.NAP,b.COM];
-    var cells=pcts.map(function(p,i){
-      var num=parseInt((''+p).replace('~',''),10)||0;
-      return '<div style="padding:6px 4px;text-align:center">'
-        +'<div style="font-family:Georgia,serif;font-size:1.1rem;font-weight:700;color:'+cols[i]+'">'+p+'%</div>'
-        +'<div style="height:3px;background:#1a1e24;border-radius:2px;margin-top:3px"><div style="width:'+Math.min(num,100)+'%;height:100%;background:'+cols[i]+';border-radius:2px"></div></div>'
-        +'</div>';
-    }).join('');
-    return '<div style="display:grid;grid-template-columns:120px repeat(4,1fr);gap:2px;margin-bottom:6px;background:'+(b.live?'rgba(201,168,76,0.05)':'transparent')+'">'
-      +'<div style="padding:6px 4px"><div style="font-size:0.68rem;font-weight:600;color:'+(b.live?'#c9a84c':'#aaa')+'">'+b.src+'</div>'
-      +'<div style="font-size:0.52rem;color:#444;margin-top:2px;line-height:1.4">'+b.note+'</div></div>'+cells+'</div>';
-  }).join('');
- 
-  var optaTeams=[
-    {name:'Inter',color:'#2255aa',projected:84.9,actual:69},
-    {name:'Milan',color:'#d40000',projected:77.5,actual:63},
-    {name:'Napoli',color:'#0e9aff',projected:76.8,actual:62},
-    {name:'Como',color:'#8855cc',projected:70.0,actual:57},
-  ];
- 
-  var optaBars=optaTeams.map(function(t){
-    var projW=(t.projected/90)*100; var actW=(t.actual/90)*100;
-    var toGet=(t.projected-t.actual).toFixed(1);
-    return '<div style="margin-bottom:10px">'
-      +'<div style="display:flex;justify-content:space-between;margin-bottom:3px">'
-      +'<span style="font-size:0.7rem;font-weight:600">'+t.name+'</span>'
-      +'<span style="font-size:0.65rem;color:#666">now <span style="color:#e0d8cc">'+t.actual+'</span> proj <span style="color:'+t.color+';font-weight:600">'+t.projected+'</span> (+'+toGet+')</span></div>'
-      +'<div style="position:relative;height:8px;background:#1a1e24;border-radius:2px">'
-      +'<div style="position:absolute;left:0;width:'+projW.toFixed(1)+'%;height:100%;background:'+t.color+'33;border-radius:2px"></div>'
-      +'<div style="position:absolute;left:0;width:'+actW.toFixed(1)+'%;height:100%;background:'+t.color+';border-radius:2px"></div>'
-      +'</div></div>';
-  }).join('');
- 
-  return '<div>'+btn
-    +'<div style="font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:#c9a84c;margin-bottom:8px">Scudetto Race</div>'
-    +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px">'+titleCards+'</div>'
-    +'<div style="font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:#003399;margin-bottom:8px;margin-top:14px">Champions League Spots (Top 4)</div>'
-    +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px">'+clCards+'</div>'
-    +'<div style="background:#0c1018;border:1px solid #181e28;padding:14px 16px;margin-bottom:12px">'
-    +'<div style="font-size:0.56rem;letter-spacing:0.12em;text-transform:uppercase;color:#555;margin-bottom:12px">Projected final points range</div>'
-    +ptsBars+'</div>'
-    +'<div style="background:#0c1018;border:1px solid #181e28;padding:14px 16px;border-top:2px solid #1a1e24">'
-    +'<div style="font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:#555;margin-bottom:4px">Model Comparison - MD31</div>'
-    +'<div style="font-size:0.62rem;color:#444;margin-bottom:14px;line-height:1.5">Opta Analyst and StatsUltra vs our 1,000-scenario engine.</div>'
-    +'<div style="display:grid;grid-template-columns:120px repeat(4,1fr);gap:2px;margin-bottom:4px"><div></div>'+headerCells+'</div>'
-    +benchRows
-    +'<div style="margin-top:12px;padding:10px 12px;background:#0e1318;border-left:2px solid #c9a84c">'
-    +'<div style="font-size:0.62rem;color:#777;line-height:1.65"><strong style="color:#c9a84c">Reading the numbers: </strong>'
-    +'Opta projects INT 84.9pts, ACM 77.5, NAP 76.8, COM 70.0. '
-    +'Opta gives Inter 89.3% and StatsUltra 92%. Our model weights recent form and injury penalties harder.</div></div>'
-    +'<div style="margin-top:12px;padding:10px 12px;background:#0e1318">'
-    +'<div style="font-size:0.56rem;letter-spacing:0.12em;text-transform:uppercase;color:#555;margin-bottom:10px">Opta Projected Final Points</div>'
-    +optaBars
-    +'<div style="font-size:0.58rem;color:#444;margin-top:4px">Solid = current. Faded = Opta projected finish</div>'
-    +'</div></div>'
-    +'<div style="font-size:0.6rem;color:#333;margin-top:8px;text-align:center">'+mc.ties+' tiebreak scenarios of '+mc.n+'</div>'
-    +'</div>';
+var mc=state.mc; var mcr=state.mcr;
+if(mcr) return ‘<div style="text-align:center;padding:60px 20px"><div class="pulse" style="font-size:2rem;margin-bottom:10px">⚙️</div><div style="font-size:0.75rem;color:#555">Running 1,000 scenarios…</div></div>’;
+var btn=’<div style="text-align:center;margin-bottom:20px"><button class="B" data-action="mc">’+(mc?‘Re-run 1,000 Scenarios’:‘Run 1,000 Scenarios’)+’</button></div>’;
+if(!mc) return ‘<div>’+btn+’</div>’;
+
+var titleSorted=TOP6.slice().sort(function(a,b){ return mc.titles[b.abbr]-mc.titles[a.abbr]; });
+var maxT=mc.titles[titleSorted[0].abbr];
+var titleCards=titleSorted.map(function(t,i){
+var pct=((mc.titles[t.abbr]/mc.n)*100).toFixed(1);
+var bar=maxT>0?(mc.titles[t.abbr]/maxT)*100:0;
+return ‘<div style="background:#0c1018;border:1px solid #181e28;padding:14px 12px;border-top:3px solid '+t.color+';position:relative;overflow:hidden">’
++(i===0?’<div style="position:absolute;top:7px;right:8px">🏆</div>’:’’)
++’<div style="font-size:0.54rem;letter-spacing:0.1em;text-transform:uppercase;color:#555;margin-bottom:4px">#’+(i+1)+’</div>’
++’<div style="font-size:0.72rem;font-weight:600;margin-bottom:2px">’+t.name+’</div>’
++’<div style="font-family:Georgia,serif;font-size:1.6rem;font-weight:900;color:'+t.color+'">’+pct+’%</div>’
++’<div style="height:3px;background:#1a1e24;border-radius:2px;margin-top:6px"><div style="width:'+Math.round(bar)+'%;height:100%;background:'+t.color+';border-radius:2px"></div></div>’
++’<div style="font-size:0.56rem;color:#444;margin-top:4px">Avg: ‘+mc.avg[t.abbr]+’ pts</div></div>’;
+}).join(’’);
+
+var clSorted=TOP6.slice().sort(function(a,b){ return mc.clSpots[b.abbr]-mc.clSpots[a.abbr]; });
+var clCards=clSorted.map(function(t,i){
+var pct=((mc.clSpots[t.abbr]/mc.n)*100).toFixed(1);
+var safe=parseFloat(pct)>=90; var danger=parseFloat(pct)<40;
+var col=safe?’#00e676’:danger?’#ff6d00’:t.color;
+return ‘<div style="background:#0c1018;border:1px solid #181e28;padding:10px 12px;border-top:2px solid '+col+'">’
++’<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">’
++’<div style="font-size:0.7rem;font-weight:600">’+t.name+’</div>’
++’<div style="font-family:Georgia,serif;font-size:1rem;font-weight:700;color:'+col+'">’+pct+’%</div></div>’
++’<div style="height:3px;background:#1a1e24;border-radius:2px"><div style="width:'+pct+'%;height:100%;background:'+col+';border-radius:2px"></div></div>’
++’<div style="font-size:0.56rem;color:#444;margin-top:3px">’+mc.clSpots[t.abbr]+’/1000</div></div>’;
+}).join(’’);
+
+var ptsMax=Math.max.apply(null,TOP6.map(function(t){ return mc.mx[t.abbr]; }));
+var ptsBars=TOP6.slice().sort(function(a,b){ return mc.avg[b.abbr]-mc.avg[a.abbr]; }).map(function(t){
+var avgPct=(parseFloat(mc.avg[t.abbr])/ptsMax)*100;
+var mnPct=(mc.mn[t.abbr]/ptsMax)*100;
+var mxPct=(mc.mx[t.abbr]/ptsMax)*100;
+return ‘<div style="margin-bottom:8px">’
++’<div style="display:flex;justify-content:space-between;margin-bottom:3px">’
++’<div style="font-size:0.7rem;font-weight:600;color:'+t.color+'">’+t.name+’</div>’
++’<div style="font-size:0.65rem;color:#888">’+mc.mn[t.abbr]+’ - ‘+mc.avg[t.abbr]+’ - ‘+mc.mx[t.abbr]+’</div></div>’
++’<div style="position:relative;height:6px;background:#1a1e24;border-radius:3px">’
++’<div style="position:absolute;left:'+Math.round(mnPct)+'%;width:'+Math.round(mxPct-mnPct)+'%;height:100%;background:'+t.color+'33;border-radius:3px"></div>’
++’<div style="position:absolute;left:0;width:'+Math.round(avgPct)+'%;height:100%;background:'+t.color+';border-radius:3px"></div>’
++’</div></div>’;
+}).join(’’);
+
+// Model comparison
+var ourInt=((mc.titles.INT/mc.n)*100).toFixed(0);
+var ourAcm=((mc.titles.ACM/mc.n)*100).toFixed(0);
+var ourNap=((mc.titles.NAP/mc.n)*100).toFixed(0);
+var ourCom=((mc.titles.COM/mc.n)*100).toFixed(0);
+var benchmarks=[
+{src:‘Our Model’,note:‘1,000 sims - xG + form + PPDA + H2H’,INT:ourInt,ACM:ourAcm,NAP:ourNap,COM:ourCom,live:true},
+{src:‘Opta Analyst’,note:‘Post-MD30 - xPTS: INT 84.9 / ACM 77.5 / NAP 76.8’,INT:‘89.3’,ACM:‘6.0’,NAP:‘4.0’,COM:‘~1’,live:false},
+{src:‘StatsUltra’,note:‘Post-MD30 - 15k daily sims - xG ratings’,INT:‘92.0’,ACM:‘4.0’,NAP:‘4.0’,COM:‘~0’,live:false},
+];
+var cols=[’#2255aa’,’#d40000’,’#0e9aff’,’#8855cc’];
+var teamNames=[‘Inter’,‘Milan’,‘Napoli’,‘Como’];
+var headerCells=teamNames.map(function(n,i){ return ‘<div style="font-size:0.58rem;color:'+cols[i]+';text-align:center;padding:3px 0;font-weight:600">’+n+’</div>’; }).join(’’);
+var benchRows=benchmarks.map(function(b){
+var pcts=[b.INT,b.ACM,b.NAP,b.COM];
+var cells=pcts.map(function(p,i){
+var num=parseInt((’’+p).replace(’~’,’’),10)||0;
+return ‘<div style="padding:6px 4px;text-align:center">’
++’<div style="font-family:Georgia,serif;font-size:1.1rem;font-weight:700;color:'+cols[i]+'">’+p+’%</div>’
++’<div style="height:3px;background:#1a1e24;border-radius:2px;margin-top:3px"><div style="width:'+Math.min(num,100)+'%;height:100%;background:'+cols[i]+';border-radius:2px"></div></div>’
++’</div>’;
+}).join(’’);
+return ‘<div style="display:grid;grid-template-columns:120px repeat(4,1fr);gap:2px;margin-bottom:6px;background:'+(b.live?'rgba(201,168,76,0.05)':'transparent')+'">’
++’<div style="padding:6px 4px"><div style="font-size:0.68rem;font-weight:600;color:'+(b.live?'#c9a84c':'#aaa')+'">’+b.src+’</div>’
++’<div style="font-size:0.52rem;color:#444;margin-top:2px;line-height:1.4">’+b.note+’</div></div>’+cells+’</div>’;
+}).join(’’);
+var optaTeams=[
+{name:‘Inter’,color:’#2255aa’,projected:84.9,actual:69},
+{name:‘Milan’,color:’#d40000’,projected:77.5,actual:63},
+{name:‘Napoli’,color:’#0e9aff’,projected:76.8,actual:62},
+{name:‘Como’,color:’#8855cc’,projected:70.0,actual:57},
+];
+var optaBars=optaTeams.map(function(t){
+var projW=(t.projected/90)*100; var actW=(t.actual/90)*100;
+var toGet=(t.projected-t.actual).toFixed(1);
+return ‘<div style="margin-bottom:10px">’
++’<div style="display:flex;justify-content:space-between;margin-bottom:3px">’
++’<span style="font-size:0.7rem;font-weight:600">’+t.name+’</span>’
++’<span style="font-size:0.65rem;color:#666">now <span style="color:#e0d8cc">’+t.actual+’</span> proj <span style="color:'+t.color+';font-weight:600">’+t.projected+’</span> (+’+toGet+’)</span></div>’
++’<div style="position:relative;height:8px;background:#1a1e24;border-radius:2px">’
++’<div style="position:absolute;left:0;width:'+projW.toFixed(1)+'%;height:100%;background:'+t.color+'33;border-radius:2px"></div>’
++’<div style="position:absolute;left:0;width:'+actW.toFixed(1)+'%;height:100%;background:'+t.color+';border-radius:2px"></div>’
++’</div></div>’;
+}).join(’’);
+
+return ‘<div>’+btn
++’<div style="font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:#c9a84c;margin-bottom:8px">Scudetto Race</div>’
++’<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px">’+titleCards+’</div>’
++’<div style="font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:#003399;margin-bottom:8px;margin-top:14px">Champions League Spots (Top 4)</div>’
++’<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px">’+clCards+’</div>’
++’<div style="background:#0c1018;border:1px solid #181e28;padding:14px 16px;margin-bottom:12px">’
++’<div style="font-size:0.56rem;letter-spacing:0.12em;text-transform:uppercase;color:#555;margin-bottom:12px">Projected final points range</div>’
++ptsBars+’</div>’
++’<div style="background:#0c1018;border:1px solid #181e28;padding:14px 16px;border-top:2px solid #1a1e24">’
++’<div style="font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:#555;margin-bottom:4px">Model Comparison - MD31</div>’
++’<div style="font-size:0.62rem;color:#444;margin-bottom:14px;line-height:1.5">Opta Analyst and StatsUltra vs our 1,000-scenario engine.</div>’
++’<div style="display:grid;grid-template-columns:120px repeat(4,1fr);gap:2px;margin-bottom:4px"><div></div>’+headerCells+’</div>’
++benchRows
++’<div style="margin-top:12px;padding:10px 12px;background:#0e1318;border-left:2px solid #c9a84c">’
++’<div style="font-size:0.62rem;color:#777;line-height:1.65"><strong style="color:#c9a84c">Reading the numbers: </strong>’
++‘Opta projects INT 84.9pts, ACM 77.5, NAP 76.8, COM 70.0. ’
++‘Opta gives Inter 89.3% and StatsUltra 92%. Our model weights recent form and injury penalties harder.</div></div>’
++’<div style="margin-top:12px;padding:10px 12px;background:#0e1318">’
++’<div style="font-size:0.56rem;letter-spacing:0.12em;text-transform:uppercase;color:#555;margin-bottom:10px">Opta Projected Final Points</div>’
++optaBars
++’<div style="font-size:0.58rem;color:#444;margin-top:4px">Solid = current. Faded = Opta projected finish</div>’
++’</div></div>’
++’<div style="font-size:0.6rem;color:#333;margin-top:8px;text-align:center">’+mc.ties+’ tiebreak scenarios of ‘+mc.n+’</div>’
++’</div>’;
 }
- 
+
+// – RENDER
+
+function renderTactics() {
+var ppda_sorted = Object.keys(TDATA).map(function(k){ return {abbr:k,ppda:TDATA[k].ppda,block:TDATA[k].block}; }).sort(function(a,b){ return a.ppda-b.ppda; });
+var ppda_rows = ppda_sorted.map(function(t,i) {
+var team = TEAMS.find(function(x){ return x.abbr===t.abbr; });
+var bar_pct = Math.round((t.ppda-7)/(17-7)*100);
+return ‘<div style="display:flex;align-items:center;gap:8px;padding:5px 10px;border-bottom:1px solid #0d1117">’
++’<div style="font-size:0.6rem;color:#555;width:16px">’+(i+1)+’</div>’
++’<div style="font-size:0.72rem;flex:1;font-weight:'+(i<4?'600':'400')+';color:'+(i<4?'#e0d8cc':'#999')+'">’+(team?team.name:t.abbr)+’</div>’
++’<div style="width:80px;height:4px;background:#1a1e24;border-radius:2px"><div style="width:'+bar_pct+'%;height:100%;background:'+(t.ppda<9?'#ff1744':t.ppda<12?'#ffd740':'#444')+';border-radius:2px"></div></div>’
++’<div style="font-size:0.72rem;color:#c9a84c;width:36px;text-align:right">’+t.ppda+’</div>’
++’<div style="font-size:0.58rem;color:#555;width:80px;text-align:right">’+t.block+’</div>’
++’</div>’;
+}).join(’’);
+var bkKeys = [‘high’,‘medium’,‘low’]; var bkL = {high:‘High Press’,medium:‘Med Press’,low:‘Low Block’};
+var matrixHeader = ‘<div style="display:grid;grid-template-columns:100px repeat(3,1fr);gap:2px;margin-bottom:4px"><div style="font-size:0.52rem;color:#444">Attacker / Def</div>’
++bkKeys.map(function(k){ return ‘<div style="font-size:0.58rem;color:#888;text-align:center">vs ‘+bkL[k]+’</div>’; }).join(’’)+’</div>’;
+var matrixRows = bkKeys.map(function(atk) {
+return ‘<div style="display:grid;grid-template-columns:100px repeat(3,1fr);gap:2px;margin-bottom:6px">’
++’<div style="font-size:0.62rem;color:#c9a84c;display:flex;align-items:center">’+bkL[atk]+’</div>’
++bkKeys.map(function(def) {
+var mu = BLOCK_MU[atk+’*vs*’+def] || {label:’’,gm:1.0};
+var col = mu.gm>1.05?’#00e676’:mu.gm<0.95?’#ff1744’:’#ffd740’;
+return ‘<div style="background:#0c1018;border:1px solid #181e28;padding:8px;text-align:center">’
++’<div style="font-size:0.6rem;color:'+col+';font-weight:600">’+mu.label+’</div>’
++’<div style="font-size:0.54rem;color:#555">x’+mu.gm+’</div></div>’;
+}).join(’’)+’</div>’;
+}).join(’’);
+return ‘<div><div style="font-family:Georgia,serif;font-size:1.25rem;font-weight:700;margin-bottom:16px">Tactical Analysis</div>’
++’<div style="background:#0c1018;border:1px solid #181e28;padding:14px 16px;margin-bottom:12px">’
++’<div style="font-size:0.58rem;color:#c9a84c;letter-spacing:0.14em;text-transform:uppercase;margin-bottom:10px">PPDA League Table</div>’+ppda_rows+’</div>’
++’<div style="background:#0c1018;border:1px solid #181e28;padding:14px 16px">’
++’<div style="font-size:0.58rem;color:#c9a84c;letter-spacing:0.14em;text-transform:uppercase;margin-bottom:10px">Block Matchup Matrix</div>’
++matrixHeader+matrixRows+’</div></div>’;
+}
+
 function setTab(t){ state.tab=t; render(); }
- 
 function render() {
-  var TABS=[['runin','Run-In'],['stats','Stats'],['tactics','Tactics'],['simulator','Simulator'],['monte','1000 Scenarios']];
- 
-  // FIX #2: removed extra closing quote from data-action attribute
-  var tabBtns=TABS.map(function(item){
-    return '<button class="T'+(state.tab===item[0]?' on':'')+'" data-action="tab-'+item[0]+'">'+item[1]+'</button>';
-  }).join('');
- 
-  var content='';
-  if(state.tab==='runin')          content=renderRunIn();
-  else if(state.tab==='stats')     content=renderStats();
-  else if(state.tab==='tactics')   content=renderTactics();
-  else if(state.tab==='simulator') content=renderSimulator();
-  else if(state.tab==='monte')     content=renderMonte();
- 
-  document.getElementById('root').innerHTML=
-    '<div style="min-height:100vh;background:#07090d;color:#e0d8cc">'
-    +'<div style="background:#0e1520;border-bottom:1px solid #151b25;padding:18px 24px 0">'
-    +'<div style="max-width:980px;margin:0 auto">'
-    +'<div style="display:flex;align-items:baseline;gap:12px;margin-bottom:14px">'
-    +'<h1 style="font-family:Georgia,serif;font-size:1.8rem;font-weight:900;color:#c9a84c">CALCIO SIM</h1>'
-    +'<span style="font-size:0.58rem;color:#444;letter-spacing:0.18em;text-transform:uppercase">Serie A 2025/26 - MD31</span>'
-    +'</div>'
-    +'<div style="display:flex;border-bottom:1px solid #151b25;overflow-x:auto">'+tabBtns+'</div>'
-    +'</div></div>'
-    +'<div style="max-width:980px;margin:0 auto;padding:20px 16px">'+content+'</div>'
-    +'</div>';
+var TABS=[[‘runin’,‘Run-In’],[‘stats’,‘Stats’],[‘simulator’,‘Simulator’],[‘monte’,‘1000 Scenarios’]];
+var tabBtns=TABS.map(function(item){
+return ‘<button class=“T’+(state.tab===item[0]?’ on’:’’)+’” data-action=“tab-’+item[0]+’””>’+item[1]+’</button>’;
+}).join(’’);
+var content=’’;
+if(state.tab===‘runin’)      content=renderRunIn();
+else if(state.tab===‘stats’)      content=renderStats();
+else if(state.tab===‘simulator’)  content=renderSimulator();
+else if(state.tab===‘monte’)      content=renderMonte();
+
+document.getElementById(‘root’).innerHTML=
+‘<div style="min-height:100vh;background:#07090d;color:#e0d8cc">’
++’<div style="background:#0e1520;border-bottom:1px solid #151b25;padding:18px 24px 0">’
++’<div style="max-width:980px;margin:0 auto">’
++’<div style="display:flex;align-items:baseline;gap:12px;margin-bottom:14px">’
++’<h1 style="font-family:Georgia,serif;font-size:1.8rem;font-weight:900;background:linear-gradient(135deg,#c9a84c,#e8d08a);-webkit-background-clip:text;-webkit-text-fill-color:transparent">CALCIO SIM</h1>’
++’<span style="font-size:0.58rem;color:#444;letter-spacing:0.18em;text-transform:uppercase">Serie A 2025/26 - MD31</span>’
++’</div>’
++’<div style="display:flex;border-bottom:1px solid #151b25;overflow-x:auto">’+tabBtns+’</div>’
++’</div></div>’
++’<div style="max-width:980px;margin:0 auto;padding:20px 16px">’+content+’</div>’
++’</div>’;
 }
- 
-document.addEventListener('click', function(e) {
-  var el = e.target;
-  while (el && el !== document) {
-    var action = el.getAttribute('data-action');
-    if (action) {
-      if (action === 'runin')               { doRunIn(); return; }
-      if (action === 'mc')                  { doMC(); return; }
-      if (action === 'kickoff')             { doKickOff(); return; }
-      if (action.indexOf('tab-') === 0)     { setTab(action.slice(4)); return; }
-    }
-    el = el.parentNode;
-  }
+document.addEventListener(‘click’, function(e) {
+var el = e.target;
+while (el && el !== document) {
+var ac = el.getAttribute && el.getAttribute(‘data-action’);
+if (ac) {
+if (ac === ‘runin’) { doRunIn(); return; }
+if (ac === ‘mc’) { doMC(); return; }
+if (ac === ‘kickoff’) { if (!el.disabled) doKickOff(); return; }
+if (ac.indexOf(‘tab-’) === 0) { setTab(ac.slice(4)); return; }
+}
+el = el.parentNode;
+}
 });
- 
-document.addEventListener('change', function(e) {
-  var el = e.target;
-  if (el && el.getAttribute('data-action') === 'selchange') {
-    var sh = document.getElementById('sh');
-    var sa = document.getElementById('sa');
-    if (sh) state.home = sh.value;
-    if (sa) state.away = sa.value;
-    state.match = null; state.evs = []; state.score = {h:0,a:0};
-    state.fin = false; state.playing = false;
-    render();
-  }
+document.addEventListener(‘change’, function(e) {
+var el = e.target;
+if (el && el.getAttribute && el.getAttribute(‘data-action’) === ‘selchange’) {
+var sh = document.getElementById(‘sh’);
+var sa = document.getElementById(‘sa’);
+if (sh) state.home = sh.value;
+if (sa) state.away = sa.value;
+state.match = null; state.evs = []; state.score = {h:0,a:0};
+state.fin = false; state.playing = false;
+render();
+}
 });
- 
-window.addEventListener('DOMContentLoaded', function() {
-  try {
-    render();
-  } catch(e) {
-    var root = document.getElementById('root');
-    if (root) {
-      root.style.background = '#07090d';
-      root.style.color = '#ff1744';
-      root.style.padding = '20px';
-      root.style.fontFamily = 'monospace';
-      root.innerHTML = '<h2>Error</h2><pre>' + e.message + '\n' + (e.stack||'') + '</pre>';
-    }
-  }
+
+document.addEventListener(‘DOMContentLoaded’, function() {
+try { render(); } catch(e) {
+var root = document.getElementById(‘root’);
+if(root){ root.style.cssText=‘background:#07090d;color:#ff1744;padding:20px;font-family:monospace’; root.innerHTML=’<h2>Error</h2><pre>’+e.message+’\n’+(e.stack||’’)+’</pre>’; }
+}
 });
- 
+
   </script>
 </body>
 </html>
