@@ -868,7 +868,7 @@ function renderMonte(){
     +'<strong style="color:#c9a84c">Injury impact:</strong> NAP missing Di Lorenzo + Rrahmani for MD31-33 costs ~14 str points.</div></div></div>';
  
   return'<div>'
-    +'<div style="font-family:Georgia,serif;font-size:1.25rem;font-weight:700;margin-bottom:3px">LLM V2</div>'
+    +'<div style="font-family:Georgia,serif;font-size:1.25rem;font-weight:700;margin-bottom:3px">AI SIM</div>'
     +'<div style="font-size:0.65rem;color:#555;margin-bottom:16px">10,000 simulations \u2022 Mismatch-calibrated DC matrices \u2022 Exact analytical match probabilities</div>'
     +btn
     +'<div style="font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:#c9a84c;margin-bottom:8px">Scudetto Race</div>'
@@ -898,7 +898,7 @@ function renderMonte(){
 function setTab(t){state.tab=t;render();}
  
 function render(){
-  var TABS=[['runin','Run-In'],['predicted','Predicted Score'],['stats','Stats'],['tactics','Tactics'],['simulator','Simulator'],['monte','1000 Scenarios']];
+  var TABS=[['runin','Run-In'],['predicted','Predicted Score'],['stats','Stats'],['tactics','Tactics'],['simulator','Simulator'],['monte','10000 Scenarios']];
   var tabBtns=TABS.map(function(item){return'<button class="T'+(state.tab===item[0]?' on':'')+'" data-action="tab-'+item[0]+'">'+item[1]+'</button>';}).join('');
   var content='';
   if(state.tab==='runin')content=renderRunIn();
