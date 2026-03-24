@@ -1096,7 +1096,8 @@ function renderSimulator() {
 // ═══════════════════════════════════════════════════
 // MONTE CARLO TAB
 // ═══════════════════════════════════════════════════
-
+function doMC(){setState({mcr:true,mc:null});setTimeout(function(){setState({mc:mcRun(1000),mcr:false});},60);}
+    
 function renderMonte() {
   var mc=state.mc,mcr=state.mcr;
   if(mcr) return '<div style="text-align:center;padding:60px 20px"><div class="pulse" style="font-size:2rem;margin-bottom:10px">\u2699\uFE0F</div><div style="font-size:0.75rem;color:#555">Running 1,000 Dixon-Coles scenarios\u2026</div></div>';
