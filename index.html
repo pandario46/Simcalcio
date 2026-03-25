@@ -29,7 +29,12 @@
 // ─────────────────────────────────────────────────────────────
 
 // ── API HELPER ──────────────────────────────────────────────
-function apiCall(path, options) {
+function apiCall(path, method, body) {
+  var options = { method: method || 'GET' };
+  if (body) {
+    options.headers = { 'Content-Type': 'application/json' };
+    options.body = JSON.stringify(body);
+  }
   return fetch(path, options)
     .then(function(r) { return r.ok ? r.json() : null; })
     .catch(function(e) { console.warn('[API]', e.message); return null; });
@@ -48,7 +53,7 @@ var SESSION_ID = (function() {
 
 function trackSession() {
   apiCall(
-    '/.netlify/functions/track-session',
+    '/.netlify/functions/sessions',
     'POST',
     {
       session_id: SESSION_ID,
@@ -138,21 +143,7 @@ function loadMatchHistory() {
 }
 
 // ── BOOT ──────────────────────────────────────────────────────
-// Add these calls inside your DOMContentLoaded handler, after render():
-//
-//   trackSession();
-//   loadMatchHistory();
-//
-// And in doKickOff(), after state.hist update, add:
-//   saveMatchResult(state.match);
-//
-// After running Monte Carlo (in doMC callback), add:
-//   var titlePcts = {}; var clPcts = {};
-//   TOP6.forEach(function(t) {
-//     titlePcts[t.abbr] = ((state.mc.titles[t.abbr] / state.mc.n) * 100).toFixed(1);
-//     clPcts[t.abbr]    = ((state.mc.clSpots[t.abbr] / state.mc.n) * 100).toFixed(1);
-//   });
-//   saveStandingsSnapshot(31, titlePcts, clPcts);
+// API calls are wired up in DOMContentLoaded, doKickOff, and doMC below.
 
 var ADV = {
   INT: { xG:2.11, xGA:0.81, shots:18.2, overperf:6.4,  xPTS:57.72, str:83.2, ppda:8.8,  block:"Medium Press", bk:"medium" },
@@ -869,7 +860,7 @@ function doKickOff(){
   if(state.home===state.away||state.playing)return;if(playInterval){clearInterval(playInterval);playInterval=null;}
   var m=h2h(state.home,state.away);state.match=m;state.evs=[];state.score={h:0,a:0};state.playing=true;state.fin=false;render();
   var i=0;playInterval=setInterval(function(){
-    if(i>=m.evs.length){clearInterval(playInterval);playInterval=null;setTimeout(function(){state.fin=true;state.playing=false;state.hist=[{home:m.hTeam.name,away:m.aTeam.name,hG:m.hG,aG:m.aG}].concat(state.hist.slice(0,4));render();},600);return;}
+    if(i>=m.evs.length){clearInterval(playInterval);playInterval=null;setTimeout(function(){state.fin=true;state.playing=false;state.hist=[{home:m.hTeam.name,away:m.aTeam.name,hG:m.hG,aG:m.aG}].concat(state.hist.slice(0,4));saveMatchResult(m);render();},600);return;}
     var ev=m.evs[i];state.evs=state.evs.concat([ev]);if(ev.type==='goal')state.score={h:ev.hS,a:ev.aS};i++;
     var feed=document.getElementById('feed');var sc=document.getElementById('ls');
     if(sc)sc.textContent=state.score.h+' - '+state.score.a;
@@ -915,7 +906,7 @@ function renderSimulator(){
 // MONTE CARLO TAB (WITH COMPARISON)
 // ═══════════════════════════════════════════════════
  
-function doMC(){setState({mcr:true,mc:null});setTimeout(function(){setState({mc:mcRun(10000),mcr:false});},60);}
+function doMC(){setState({mcr:true,mc:null});setTimeout(function(){var mc=mcRun(10000);setState({mc:mc,mcr:false});var titlePcts={};var clPcts={};TOP6.forEach(function(t){titlePcts[t.abbr]=((mc.titles[t.abbr]/mc.n)*100).toFixed(1);clPcts[t.abbr]=((mc.clSpots[t.abbr]/mc.n)*100).toFixed(1);});saveStandingsSnapshot(31,titlePcts,clPcts);},60);}
  
 function renderMonte(){
   var mc=state.mc,mcr=state.mcr;
@@ -1059,7 +1050,7 @@ document.addEventListener('change',function(e){var el=e.target;if(el&&el.getAttr
   if(ac==='selchange'){var sh=document.getElementById('sh'),sa=document.getElementById('sa');if(sh)state.home=sh.value;if(sa)state.away=sa.value;state.match=null;state.evs=[];state.score={h:0,a:0};state.fin=false;state.playing=false;if(playInterval){clearInterval(playInterval);playInterval=null;}render();}
   if(ac==='predchange'){var ph=document.getElementById('ph'),pa=document.getElementById('pa');if(ph)state.predHome=ph.value;if(pa)state.predAway=pa.value;render();}}});
  
-document.addEventListener('DOMContentLoaded',function(){try{render();}catch(e){var root=document.getElementById('root');if(root){root.style.cssText='background:#07090d;color:#ff1744;padding:20px;font-family:monospace';root.innerHTML='<h2>Error</h2><pre>'+e.message+'\n'+(e.stack||'')+'</pre>';}}});
+document.addEventListener('DOMContentLoaded',function(){try{render();trackSession();loadMatchHistory();}catch(e){var root=document.getElementById('root');if(root){root.style.cssText='background:#07090d;color:#ff1744;padding:20px;font-family:monospace';root.innerHTML='<h2>Error</h2><pre>'+e.message+'\n'+(e.stack||'')+'</pre>';}}});
   </script>
 </body>
 </html>
