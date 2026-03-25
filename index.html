@@ -23,6 +23,142 @@
 <body>
   <div id="root"></div>
   <script>
+
+// ─────────────────────────────────────────────────────────────
+// NEON DB INTEGRATION — paste this into calcio_sim.html
+// Place it right after <script> and before your existing code
+// ─────────────────────────────────────────────────────────────
+
+// ── CONFIG: replace with your Neon connection string ─────────
+// Find it in Neon dashboard → your project → Connection Details
+// Use the "Pooled connection" string and add ?sslmode=require
+var NEON_HOST = 'https://ep-damp-boat-an45ai0y-pooler.c-6.us-east-1.aws.neon.tech/sql';
+var NEON_AUTH = 'Basic ' + btoa('neondb_owner:npg_z4ws0BtpdLvr');
+
+// ── NEON QUERY HELPER ─────────────────────────────────────────
+function neonQuery(sql, params) {
+  return fetch(NEON_HOST, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': NEON_AUTH
+    },
+    body: JSON.stringify({ query: sql, params: params || [] })
+  })
+  .then(function(r) { return r.ok ? r.json() : null; })
+  .catch(function(e) { console.warn('[Neon]', e.message); return null; });
+}
+
+// ── SESSION TRACKING ──────────────────────────────────────────
+var SESSION_ID = (function() {
+  var key = 'calcio_session';
+  var id = localStorage.getItem(key);
+  if (!id) {
+    id = 'sess_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+    localStorage.setItem(key, id);
+  }
+  return id;
+})();
+
+function trackSession() {
+  var ua = navigator.userAgent.slice(0, 200);
+  // Upsert session — increment page_views if already exists
+  neonQuery(
+    'INSERT INTO sessions (session_id, user_agent, page_views) VALUES ($1, $2, 1) ' +
+    'ON CONFLICT (session_id) DO UPDATE SET last_seen = NOW(), page_views = sessions.page_views + 1',
+    [SESSION_ID, ua]
+  );
+}
+
+// ── SAVE MATCH SIMULATION ─────────────────────────────────────
+// Call this after doKickOff() completes
+function saveMatchResult(match) {
+  if (!match || !match.hTeam || !match.aTeam) return;
+  var hS20 = STATS20.find(function(x){ return x.abbr === match.hTeam.abbr; }) || {};
+  var aS20 = STATS20.find(function(x){ return x.abbr === match.aTeam.abbr; }) || {};
+  var hADV = ADV[match.hTeam.abbr] || {};
+  var aADV = ADV[match.aTeam.abbr] || {};
+
+  neonQuery(
+    'INSERT INTO match_simulations ' +
+    '(session_id, home_abbr, away_abbr, home_name, away_name, ' +
+    'home_goals, away_goals, home_win_pct, draw_pct, away_win_pct, ' +
+    'home_ppda, away_ppda, home_block, away_block, tactic_label, ' +
+    'home_xg, away_xg, home_xga, away_xga) ' +
+    'VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)',
+    [
+      SESSION_ID,
+      match.hTeam.abbr, match.aTeam.abbr,
+      match.hTeam.name, match.aTeam.name,
+      match.hG, match.aG,
+      match.hW, match.dP, match.aW,
+      hS20.ppda || null, aS20.ppda || null,
+      hS20.block || null, aS20.block || null,
+      match.tacticLabel || null,
+      hADV.xG || hS20.xg || null, aADV.xG || aS20.xg || null,
+      hADV.xGA || hS20.xga || null, aADV.xGA || aS20.xga || null
+    ]
+  );
+}
+
+// ── SAVE STANDINGS SNAPSHOT ───────────────────────────────────
+// Call this when you update the app to a new matchday
+function saveStandingsSnapshot(matchday, titleProbs, clProbs) {
+  TEAMS.forEach(function(t) {
+    var s20 = STATS20.find(function(x){ return x.abbr === t.abbr; }) || {};
+    neonQuery(
+      'INSERT INTO standings_snapshots ' +
+      '(matchday, team_abbr, team_name, points, wins, draws, losses, rank, ' +
+      'xg_per_game, xga_per_game, ppda, shots_per_game, possession_pct, ' +
+      'tackles_per_game, turnovers_per_game, block_style, title_pct, cl_spot_pct) ' +
+      'VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18) ' +
+      'ON CONFLICT (matchday, team_abbr) DO UPDATE SET ' +
+      'points=$4, wins=$5, draws=$6, losses=$7, title_pct=$17, cl_spot_pct=$18',
+      [
+        matchday, t.abbr, t.name, t.pts, t.w, t.d, t.l, t.rank,
+        s20.xg || null, s20.xga || null, s20.ppda || null,
+        s20.shots || null, s20.poss || null,
+        s20.tkl || null, s20.trn || null, s20.block || null,
+        titleProbs ? (titleProbs[t.abbr] || 0) : null,
+        clProbs    ? (clProbs[t.abbr]    || 0) : null
+      ]
+    );
+  });
+}
+
+// ── LOAD MATCH HISTORY FROM DB ────────────────────────────────
+// Replaces in-memory state.hist with DB results
+function loadMatchHistory() {
+  neonQuery(
+    'SELECT home_name, away_name, home_goals, away_goals, simulated_at ' +
+    'FROM match_simulations WHERE session_id=$1 ORDER BY simulated_at DESC LIMIT 10',
+    [SESSION_ID]
+  ).then(function(res) {
+    if (!res || !res.rows) return;
+    state.hist = res.rows.map(function(r) {
+      return { home: r.home_name, away: r.away_name, hG: r.home_goals, aG: r.away_goals };
+    });
+    render();
+  });
+}
+
+// ── BOOT ──────────────────────────────────────────────────────
+// Add these calls inside your DOMContentLoaded handler, after render():
+//
+//   trackSession();
+//   loadMatchHistory();
+//
+// And in doKickOff(), after state.hist update, add:
+//   saveMatchResult(state.match);
+//
+// After running Monte Carlo (in doMC callback), add:
+//   var titlePcts = {}; var clPcts = {};
+//   TOP6.forEach(function(t) {
+//     titlePcts[t.abbr] = ((state.mc.titles[t.abbr] / state.mc.n) * 100).toFixed(1);
+//     clPcts[t.abbr]    = ((state.mc.clSpots[t.abbr] / state.mc.n) * 100).toFixed(1);
+//   });
+//   saveStandingsSnapshot(31, titlePcts, clPcts);
+
 var ADV = {
   INT: { xG:2.11, xGA:0.81, shots:18.2, overperf:6.4,  xPTS:57.72, str:83.2, ppda:8.8,  block:"Medium Press", bk:"medium" },
   NAP: { xG:1.55, xGA:1.03, shots:13.0, overperf:-0.1, xPTS:48.5,  str:76,   ppda:7.4,  block:"High Press",   bk:"high"   },
