@@ -25,28 +25,14 @@
   <script>
 
 // ─────────────────────────────────────────────────────────────
-// NEON DB INTEGRATION — paste this into calcio_sim.html
-// Place it right after <script> and before your existing code
+// NEON DB INTEGRATION via Netlify Functions
 // ─────────────────────────────────────────────────────────────
 
-// ── CONFIG: replace with your Neon connection string ─────────
-// Find it in Neon dashboard → your project → Connection Details
-// Use the "Pooled connection" string and add ?sslmode=require
-var NEON_HOST = 'https://ep-damp-boat-an45ai0y-pooler.c-6.us-east-1.aws.neon.tech/sql';
-var NEON_AUTH = 'Basic ' + btoa('neondb_owner:npg_z4ws0BtpdLvr');
-
-// ── NEON QUERY HELPER ─────────────────────────────────────────
-function neonQuery(sql, params) {
-  return fetch(NEON_HOST, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': NEON_AUTH
-    },
-    body: JSON.stringify({ query: sql, params: params || [] })
-  })
-  .then(function(r) { return r.ok ? r.json() : null; })
-  .catch(function(e) { console.warn('[Neon]', e.message); return null; });
+// ── API HELPER ──────────────────────────────────────────────
+function apiCall(path, options) {
+  return fetch(path, options)
+    .then(function(r) { return r.ok ? r.json() : null; })
+    .catch(function(e) { console.warn('[API]', e.message); return null; });
 }
 
 // ── SESSION TRACKING ──────────────────────────────────────────
@@ -62,12 +48,11 @@ var SESSION_ID = (function() {
 
 function trackSession() {
   var ua = navigator.userAgent.slice(0, 200);
-  // Upsert session — increment page_views if already exists
-  neonQuery(
-    'INSERT INTO sessions (session_id, user_agent, page_views) VALUES ($1, $2, 1) ' +
-    'ON CONFLICT (session_id) DO UPDATE SET last_seen = NOW(), page_views = sessions.page_views + 1',
-    [SESSION_ID, ua]
-  );
+  apiCall('/api/sessions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ session_id: SESSION_ID, user_agent: ua })
+  });
 }
 
 // ── SAVE MATCH SIMULATION ─────────────────────────────────────
@@ -79,67 +64,59 @@ function saveMatchResult(match) {
   var hADV = ADV[match.hTeam.abbr] || {};
   var aADV = ADV[match.aTeam.abbr] || {};
 
-  neonQuery(
-    'INSERT INTO match_simulations ' +
-    '(session_id, home_abbr, away_abbr, home_name, away_name, ' +
-    'home_goals, away_goals, home_win_pct, draw_pct, away_win_pct, ' +
-    'home_ppda, away_ppda, home_block, away_block, tactic_label, ' +
-    'home_xg, away_xg, home_xga, away_xga) ' +
-    'VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)',
-    [
-      SESSION_ID,
-      match.hTeam.abbr, match.aTeam.abbr,
-      match.hTeam.name, match.aTeam.name,
-      match.hG, match.aG,
-      match.hW, match.dP, match.aW,
-      hS20.ppda || null, aS20.ppda || null,
-      hS20.block || null, aS20.block || null,
-      match.tacticLabel || null,
-      hADV.xG || hS20.xg || null, aADV.xG || aS20.xg || null,
-      hADV.xGA || hS20.xga || null, aADV.xGA || aS20.xga || null
-    ]
-  );
+  apiCall('/api/matches', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      session_id: SESSION_ID,
+      home_abbr: match.hTeam.abbr, away_abbr: match.aTeam.abbr,
+      home_name: match.hTeam.name, away_name: match.aTeam.name,
+      home_goals: match.hG, away_goals: match.aG,
+      home_win_pct: match.hW, draw_pct: match.dP, away_win_pct: match.aW,
+      home_ppda: hS20.ppda || null, away_ppda: aS20.ppda || null,
+      home_block: hS20.block || null, away_block: aS20.block || null,
+      tactic_label: match.tacticLabel || null,
+      home_xg: hADV.xG || hS20.xg || null, away_xg: aADV.xG || aS20.xg || null,
+      home_xga: hADV.xGA || hS20.xga || null, away_xga: aADV.xGA || aS20.xga || null
+    })
+  });
 }
 
 // ── SAVE STANDINGS SNAPSHOT ───────────────────────────────────
 // Call this when you update the app to a new matchday
 function saveStandingsSnapshot(matchday, titleProbs, clProbs) {
-  TEAMS.forEach(function(t) {
+  var teamsData = TEAMS.map(function(t) {
     var s20 = STATS20.find(function(x){ return x.abbr === t.abbr; }) || {};
-    neonQuery(
-      'INSERT INTO standings_snapshots ' +
-      '(matchday, team_abbr, team_name, points, wins, draws, losses, rank, ' +
-      'xg_per_game, xga_per_game, ppda, shots_per_game, possession_pct, ' +
-      'tackles_per_game, turnovers_per_game, block_style, title_pct, cl_spot_pct) ' +
-      'VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18) ' +
-      'ON CONFLICT (matchday, team_abbr) DO UPDATE SET ' +
-      'points=$4, wins=$5, draws=$6, losses=$7, title_pct=$17, cl_spot_pct=$18',
-      [
-        matchday, t.abbr, t.name, t.pts, t.w, t.d, t.l, t.rank,
-        s20.xg || null, s20.xga || null, s20.ppda || null,
-        s20.shots || null, s20.poss || null,
-        s20.tkl || null, s20.trn || null, s20.block || null,
-        titleProbs ? (titleProbs[t.abbr] || 0) : null,
-        clProbs    ? (clProbs[t.abbr]    || 0) : null
-      ]
-    );
+    return {
+      team_abbr: t.abbr, team_name: t.name, points: t.pts,
+      wins: t.w, draws: t.d, losses: t.l, rank: t.rank,
+      xg_per_game: s20.xg || null, xga_per_game: s20.xga || null,
+      ppda: s20.ppda || null, shots_per_game: s20.shots || null,
+      possession_pct: s20.poss || null, tackles_per_game: s20.tkl || null,
+      turnovers_per_game: s20.trn || null, block_style: s20.block || null,
+      title_pct: titleProbs ? (titleProbs[t.abbr] || 0) : null,
+      cl_spot_pct: clProbs ? (clProbs[t.abbr] || 0) : null
+    };
+  });
+
+  apiCall('/api/standings', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ matchday: matchday, teams: teamsData })
   });
 }
 
 // ── LOAD MATCH HISTORY FROM DB ────────────────────────────────
 // Replaces in-memory state.hist with DB results
 function loadMatchHistory() {
-  neonQuery(
-    'SELECT home_name, away_name, home_goals, away_goals, simulated_at ' +
-    'FROM match_simulations WHERE session_id=$1 ORDER BY simulated_at DESC LIMIT 10',
-    [SESSION_ID]
-  ).then(function(res) {
-    if (!res || !res.rows) return;
-    state.hist = res.rows.map(function(r) {
-      return { home: r.home_name, away: r.away_name, hG: r.home_goals, aG: r.away_goals };
+  apiCall('/api/match-history?session_id=' + encodeURIComponent(SESSION_ID))
+    .then(function(res) {
+      if (!res || !res.rows) return;
+      state.hist = res.rows.map(function(r) {
+        return { home: r.home_name, away: r.away_name, hG: r.home_goals, aG: r.away_goals };
+      });
+      render();
     });
-    render();
-  });
 }
 
 // ── BOOT ──────────────────────────────────────────────────────
