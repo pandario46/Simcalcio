@@ -47,39 +47,45 @@ var SESSION_ID = (function() {
 })();
 
 function trackSession() {
-  var ua = navigator.userAgent.slice(0, 200);
-  apiCall('/api/sessions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ session_id: SESSION_ID, user_agent: ua })
-  });
+  apiCall(
+    '/.netlify/functions/track-session',
+    'POST',
+    {
+      session_id: SESSION_ID,
+      user_agent: navigator.userAgent.slice(0, 200)
+    }
+  );
 }
 
 // ── SAVE MATCH SIMULATION ─────────────────────────────────────
 // Call this after doKickOff() completes
 function saveMatchResult(match) {
   if (!match || !match.hTeam || !match.aTeam) return;
+ 
   var hS20 = STATS20.find(function(x){ return x.abbr === match.hTeam.abbr; }) || {};
   var aS20 = STATS20.find(function(x){ return x.abbr === match.aTeam.abbr; }) || {};
   var hADV = ADV[match.hTeam.abbr] || {};
   var aADV = ADV[match.aTeam.abbr] || {};
-
-  apiCall('/api/matches', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      session_id: SESSION_ID,
-      home_abbr: match.hTeam.abbr, away_abbr: match.aTeam.abbr,
-      home_name: match.hTeam.name, away_name: match.aTeam.name,
-      home_goals: match.hG, away_goals: match.aG,
-      home_win_pct: match.hW, draw_pct: match.dP, away_win_pct: match.aW,
-      home_ppda: hS20.ppda || null, away_ppda: aS20.ppda || null,
-      home_block: hS20.block || null, away_block: aS20.block || null,
-      tactic_label: match.tacticLabel || null,
-      home_xg: hADV.xG || hS20.xg || null, away_xg: aADV.xG || aS20.xg || null,
-      home_xga: hADV.xGA || hS20.xga || null, away_xga: aADV.xGA || aS20.xga || null
-    })
-  });
+ 
+  apiCall(
+    '/.netlify/functions/save-match',
+    'POST',
+    {
+      session_id:   SESSION_ID,
+      home_abbr:    match.hTeam.abbr,  away_abbr:    match.aTeam.abbr,
+      home_name:    match.hTeam.name,  away_name:    match.aTeam.name,
+      home_goals:   match.hG,          away_goals:   match.aG,
+      home_win_pct: match.hW,          draw_pct:     match.dP,
+      away_win_pct: match.aW,
+      home_ppda:    hS20.ppda  || null, away_ppda:   aS20.ppda  || null,
+      home_block:   hS20.block || null, away_block:  aS20.block || null,
+      tactic_label: match.tacticLabel  || null,
+      home_xg:      hADV.xG  || hS20.xg  || null,
+      away_xg:      aADV.xG  || aS20.xg  || null,
+      home_xga:     hADV.xGA || hS20.xga || null,
+      away_xga:     aADV.xGA || aS20.xga || null
+    }
+  );
 }
 
 // ── SAVE STANDINGS SNAPSHOT ───────────────────────────────────
@@ -88,35 +94,47 @@ function saveStandingsSnapshot(matchday, titleProbs, clProbs) {
   var teamsData = TEAMS.map(function(t) {
     var s20 = STATS20.find(function(x){ return x.abbr === t.abbr; }) || {};
     return {
-      team_abbr: t.abbr, team_name: t.name, points: t.pts,
-      wins: t.w, draws: t.d, losses: t.l, rank: t.rank,
-      xg_per_game: s20.xg || null, xga_per_game: s20.xga || null,
-      ppda: s20.ppda || null, shots_per_game: s20.shots || null,
-      possession_pct: s20.poss || null, tackles_per_game: s20.tkl || null,
-      turnovers_per_game: s20.trn || null, block_style: s20.block || null,
-      title_pct: titleProbs ? (titleProbs[t.abbr] || 0) : null,
-      cl_spot_pct: clProbs ? (clProbs[t.abbr] || 0) : null
+      team_abbr:          t.abbr,
+      team_name:          t.name,
+      points:             t.pts,
+      wins:               t.w,
+      draws:              t.d,
+      losses:             t.l,
+      rank:               t.rank,
+      xg_per_game:        s20.xg    || null,
+      xga_per_game:       s20.xga   || null,
+      ppda:               s20.ppda  || null,
+      shots_per_game:     s20.shots || null,
+      possession_pct:     s20.poss  || null,
+      tackles_per_game:   s20.tkl   || null,
+      turnovers_per_game: s20.trn   || null,
+      block_style:        s20.block || null,
+      title_pct:          titleProbs ? (titleProbs[t.abbr] || 0) : null,
+      cl_spot_pct:        clProbs    ? (clProbs[t.abbr]    || 0) : null
     };
   });
-
-  apiCall('/api/standings', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ matchday: matchday, teams: teamsData })
-  });
+ 
+  apiCall(
+    '/.netlify/functions/save-standings',
+    'POST',
+    { matchday: matchday, teams: teamsData }
+  );
 }
 
 // ── LOAD MATCH HISTORY FROM DB ────────────────────────────────
 // Replaces in-memory state.hist with DB results
 function loadMatchHistory() {
-  apiCall('/api/match-history?session_id=' + encodeURIComponent(SESSION_ID))
-    .then(function(res) {
-      if (!res || !res.rows) return;
-      state.hist = res.rows.map(function(r) {
-        return { home: r.home_name, away: r.away_name, hG: r.home_goals, aG: r.away_goals };
-      });
-      render();
+  apiCall(
+    '/.netlify/functions/match-history?session_id=' + encodeURIComponent(SESSION_ID),
+    'GET'
+  )
+  .then(function(res) {
+    if (!res || !res.rows) return;
+    state.hist = res.rows.map(function(r) {
+      return { home: r.home_name, away: r.away_name, hG: r.home_goals, aG: r.away_goals };
     });
+    render();
+  });
 }
 
 // ── BOOT ──────────────────────────────────────────────────────
