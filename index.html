@@ -35,11 +35,30 @@ function apiCall(path, method, body) {
     options.headers = { 'Content-Type': 'application/json' };
     options.body = JSON.stringify(body);
   }
+ 
+  console.log('[API] →', method || 'GET', path, body || '');
+ 
   return fetch(path, options)
-    .then(function(r) { return r.ok ? r.json() : null; })
-    .catch(function(e) { console.warn('[API]', e.message); return null; });
+    .then(function(r) {
+      console.log('[API] ← status:', r.status, path);
+      if (r.ok) {
+        return r.json().then(function(data) {
+          console.log('[API] ← body:', data);
+          return data;
+        });
+      } else {
+        return r.text().then(function(txt) {
+          console.warn('[API] ← error response:', txt);
+          return null;
+        });
+      }
+    })
+    .catch(function(e) {
+      console.error('[API] ← fetch failed:', e.message, path);
+      return null;
+    });
 }
-
+    
 // ── SESSION TRACKING ──────────────────────────────────────────
 var SESSION_ID = (function() {
   var key = 'calcio_session';
