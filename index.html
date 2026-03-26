@@ -1784,18 +1784,121 @@ function render(){
     +'<div style="display:flex;border-bottom:1px solid #151b25;overflow-x:auto">'+tabBtns+'</div></div></div>'
     +'<div style="max-width:980px;margin:0 auto;padding:20px 16px">'+content+'</div></div>';
 }
- 
 // ═══════════════════════════════════════════════════
 // EVENT LISTENERS
 // ═══════════════════════════════════════════════════
  
-document.addEventListener('click',function(e){var el=e.target;while(el&&el!==document){var ac=el.getAttribute&&el.getAttribute('data-action');if(ac){if(ac==='runin'){doRunIn();return;}if(ac==='mc'){doMC();return;}if(ac==='kickoff'){if(!el.disabled)doKickOff();return;}if(ac.indexOf('tab-')===0){setTab(ac.slice(4));return;}}el=el.parentNode;}});
+document.addEventListener('click', function(e) {
+  var el = e.target;
+  while (el && el !== document) {
+    var ac = el.getAttribute && el.getAttribute('data-action');
+    if (ac) {
+      if (ac === 'runin') { doRunIn(); return; }
+      if (ac === 'mc') { doMC(); return; }
+      if (ac === 'kickoff') { if (!el.disabled) doKickOff(); return; }
+      if (ac.indexOf('tab-') === 0) { setTab(ac.slice(4)); return; }
  
-document.addEventListener('change',function(e){var el=e.target;if(el&&el.getAttribute){var ac=el.getAttribute('data-action');
-  if(ac==='selchange'){var sh=document.getElementById('sh'),sa=document.getElementById('sa');if(sh)state.home=sh.value;if(sa)state.away=sa.value;state.match=null;state.evs=[];state.score={h:0,a:0};state.fin=false;state.playing=false;if(playInterval){clearInterval(playInterval);playInterval=null;}render();}
-  if(ac==='predchange'){var ph=document.getElementById('ph'),pa=document.getElementById('pa');if(ph)state.predHome=ph.value;if(pa)state.predAway=pa.value;render();}}});
+      // ── NEW: Sim toggles (home advantage, rivalry) ──
+      if (ac === 'simToggle') {
+        handleSimToggle(el.getAttribute('data-toggle'));
+        return;
+      }
  
-document.addEventListener('DOMContentLoaded',function(){try{render();trackSession();loadMatchHistory();}catch(e){var root=document.getElementById('root');if(root){root.style.cssText='background:#07090d;color:#ff1744;padding:20px;font-family:monospace';root.innerHTML='<h2>Error</h2><pre>'+e.message+'\n'+(e.stack||'')+'</pre>';}}});
+      // ── NEW: Lock prediction ──
+      if (ac === 'submitPrediction') {
+        handlePredictionSubmit();
+        return;
+      }
+ 
+      // ── NEW: Change/reset prediction ──
+      if (ac === 'resetPrediction') {
+        resetPrediction();
+        return;
+      }
+ 
+      // ── NEW: Reset match (new match button after full time) ──
+      if (ac === 'resetMatch') {
+        state.match = null;
+        state.evs = [];
+        state.score = { h: 0, a: 0 };
+        state.playing = false;
+        state.fin = false;
+        state.prediction.submitted = false;
+        state.prediction.h = '';
+        state.prediction.a = '';
+        state.prediction.lastMsg = '';
+        render();
+        return;
+      }
+    }
+    el = el.parentNode;
+  }
+});
+ 
+document.addEventListener('change', function(e) {
+  var el = e.target;
+  if (el && el.getAttribute) {
+    var ac = el.getAttribute('data-action');
+ 
+    if (ac === 'selchange') {
+      var sh = document.getElementById('sh'), sa = document.getElementById('sa');
+      if (sh) state.home = sh.value;
+      if (sa) state.away = sa.value;
+      state.match = null;
+      state.evs = [];
+      state.score = { h: 0, a: 0 };
+      state.fin = false;
+      state.playing = false;
+      if (playInterval) { clearInterval(playInterval); playInterval = null; }
+      render();
+    }
+ 
+    if (ac === 'predchange') {
+      var ph = document.getElementById('ph'), pa = document.getElementById('pa');
+      if (ph) state.predHome = ph.value;
+      if (pa) state.predAway = pa.value;
+      render();
+    }
+ 
+    // ── NEW: Formation & weather dropdowns ──
+    if (ac === 'simSetting') {
+      handleSimSettingChange(el);
+    }
+  }
+});
+ 
+// ── NEW: Input event for sliders & prediction number fields ──
+document.addEventListener('input', function(e) {
+  var el = e.target;
+  if (el && el.getAttribute) {
+    var ac = el.getAttribute('data-action');
+ 
+    // Sliders (rotation, morale, ref strictness, fatigue)
+    if (ac === 'simSlider') {
+      handleSimSettingChange(el);
+    }
+ 
+    // Prediction score inputs
+    if (ac === 'simSetting' && (el.id === 'pred_home' || el.id === 'pred_away')) {
+      handleSimSettingChange(el);
+    }
+  }
+});
+ 
+document.addEventListener('DOMContentLoaded', function() {
+  try {
+    render();
+    trackSession();
+    loadMatchHistory();
+  } catch (e) {
+    var root = document.getElementById('root');
+    if (root) {
+      root.style.cssText = 'background:#07090d;color:#ff1744;padding:20px;font-family:monospace';
+      root.innerHTML = '<h2>Error</h2><pre>' + e.message + '\n' + (e.stack || '') + '</pre>';
+    }
+  }
+});
+    
   </script>
 </body>
 </html>
