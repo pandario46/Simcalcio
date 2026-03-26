@@ -638,7 +638,7 @@ function DiffBadge(props){
 // STATE
 // ═══════════════════════════════════════════════════
  
-var state={tab:'runin',sim:{},ran:false,home:'INT',away:'NAP',match:null,evs:[],score:{h:0,a:0},playing:false,fin:false,hist:[],mc:null,mcr:false,predHome:'COM',predAway:'PIS'};
+var state={tab:'runin',sim:{},ran:false,home:'INT',away:'NAP',match:null,evs:[],score:{h:0,a:0},playing:false,fin:false,hist:[],mc:null,mcr:false,predHome:'COM',predAway:'PIS',simSet:{homeRotation:0,awayRotation:0,homeFormation:'default',awayFormation:'default',homeMorale:50,awayMorale:50},pred:{h:'',a:'',locked:false,coins:0,streak:0,correct:0,attempts:0,lastMsg:'',lastReward:0,lastPH:'',lastPA:''}};
 var playInterval=null;
 function setState(patch){Object.assign(state,patch);render();}
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
@@ -791,21 +791,6 @@ function doRunIn(){
  
 function renderRunIn(){
   var sim=state.sim,ran=state.ran;
-}
-  function renderSimulator() {
-  var hT = TEAMS.find(function(t) { return t.abbr === state.home; });
-  var aT = TEAMS.find(function(t) { return t.abbr === state.away; });
-  var hM = getMomentum(hT.form), aM = getMomentum(aT.form);
-  var ss = state.sim, pr = state.pred;
- 
-  // ── Safe defaults if state.sim got corrupted ──
-  if (!ss) { ss = state.sim = { homeRotation:0, awayRotation:0, homeFormation:'default', awayFormation:'default', homeMorale:50, awayMorale:50, weather:'clear', homeAdvantage:true, refStrictness:50, rivalry:false }; }
-  if (!pr) { pr = state.pred = { h:'', a:'', locked:false, coins:0, streak:0, correct:0, attempts:0, lastMsg:'', lastReward:0, lastPH:'', lastPA:'' }; }
-  if (!SIM_FORMATIONS[ss.homeFormation]) ss.homeFormation = 'default';
-  if (!SIM_FORMATIONS[ss.awayFormation]) ss.awayFormation = 'default';
-  if (!SIM_WEATHER[ss.weather]) ss.weather = 'clear';
- 
-  // ... rest of renderSimulator continues unchanged
   var cards=TOP6.map(function(t){var proj=ran&&sim[t.abbr]?t.pts+sim[t.abbr][sim[t.abbr].length-1].cum:null;var inj=INJURIES[t.abbr];
     return'<div style="background:#0c1018;border:1px solid #181e28;padding:12px 14px;border-top:2px solid '+t.color+'">'
       +'<div style="font-size:0.58rem;color:#555;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:3px">Current</div>'
@@ -884,21 +869,8 @@ function renderTactics(){
   return'<div><div style="font-family:Georgia,serif;font-size:1.25rem;font-weight:700;margin-bottom:16px">Tactical Analysis</div><div style="background:#0c1018;border:1px solid #181e28;padding:14px 16px;margin-bottom:12px"><div style="font-size:0.58rem;color:#c9a84c;letter-spacing:0.14em;text-transform:uppercase;margin-bottom:10px">PPDA League Table</div>'+ppda_rows+'</div><div style="background:#0c1018;border:1px solid #181e28;padding:14px 16px"><div style="font-size:0.58rem;color:#c9a84c;letter-spacing:0.14em;text-transform:uppercase;margin-bottom:10px">Block Matchup Matrix</div>'+matrixHeader+matrixRows+'</div></div>';
 }
 // ═══════════════════════════════════════════════════
-// SIMULATOR TAB — ENHANCED (FIXED v3)
+// SIMULATOR TAB
 // ═══════════════════════════════════════════════════
- 
-if (!state.sim) {
-  state.sim = {
-    homeRotation: 0, awayRotation: 0,
-    homeFormation: 'default', awayFormation: 'default',
-    homeMorale: 50, awayMorale: 50,
-    weather: 'clear', homeAdvantage: true,
-    refStrictness: 50, rivalry: false
-  };
-}
-if (!state.pred) {
-  state.pred = { h: '', a: '', locked: false, coins: 0, streak: 0, correct: 0, attempts: 0, lastMsg: '', lastReward: 0, lastPH: '', lastPA: '' };
-}
  
 var SIM_FORMATIONS = {
   'default':   { label: 'Default',          atk: 0,     def: 0    },
@@ -910,14 +882,6 @@ var SIM_FORMATIONS = {
   '3-4-3':     { label: '3-4-3 All-Out',    atk: 0.18,  def:-0.15 }
 };
  
-var SIM_WEATHER = {
-  'clear': { label: '\u2600\uFE0F Clear',       chaos: 0    },
-  'rain':  { label: '\uD83C\uDF27\uFE0F Rain',  chaos: 0.15 },
-  'snow':  { label: '\u2744\uFE0F Snow',         chaos: 0.22 },
-  'wind':  { label: '\uD83D\uDCA8 Wind',         chaos: 0.10 },
-  'heat':  { label: '\uD83D\uDD25 Heat',         chaos: 0.08 }
-};
- 
 function buildSelect(id, val) {
   return '<select class="S" id="' + id + '" data-action="selchange">' +
     TEAMS.map(function(t) {
@@ -926,36 +890,17 @@ function buildSelect(id, val) {
 }
  
 function simGoalAdj(side) {
-  var s = state.sim;
+  var s = state.simSet;
   var rot = side === 'h' ? s.homeRotation : s.awayRotation;
   var form = SIM_FORMATIONS[side === 'h' ? s.homeFormation : s.awayFormation] || SIM_FORMATIONS['default'];
   var oForm = SIM_FORMATIONS[side === 'h' ? s.awayFormation : s.homeFormation] || SIM_FORMATIONS['default'];
   var morale = side === 'h' ? s.homeMorale : s.awayMorale;
-  var w = SIM_WEATHER[s.weather] || SIM_WEATHER['clear'];
   var adj = 0;
   adj -= (rot / 100) * 1.2;
   adj += form.atk * 3;
   adj -= oForm.def * 2.5;
   adj += ((morale - 50) / 50) * 0.5;
-  if (side === 'h' && s.homeAdvantage) adj += 0.3;
-  if (s.rivalry) adj += 0.25;
-  if (Math.random() < w.chaos) adj += (Math.random() < 0.5 ? 1 : -1);
   return adj;
-}
- 
-function pickPlayer(abbr) {
-  var roster = PL[abbr];
-  if (!roster || roster.length === 0) return 'Unknown';
-  // slice(1) skips goalkeeper for goal scorers
-  var outfield = roster.slice(1);
-  if (outfield.length === 0) return roster[0];
-  return outfield[Math.floor(Math.random() * outfield.length)];
-}
- 
-function pickAnyPlayer(abbr) {
-  var roster = PL[abbr];
-  if (!roster || roster.length === 0) return 'Unknown';
-  return roster[Math.floor(Math.random() * roster.length)];
 }
  
 function buildAdjustedMatch(ha, aa, hGAdj, aGAdj) {
@@ -965,81 +910,50 @@ function buildAdjustedMatch(ha, aa, hGAdj, aGAdj) {
   var score = dcSample(dc.matrix);
   var hG = Math.max(0, Math.round(score.h + hGAdj));
   var aG = Math.max(0, Math.round(score.a + aGAdj));
- 
   var mins = []; for (var i = 1; i <= 90; i++) mins.push(i);
   mins.sort(function() { return Math.random() - 0.5; });
- 
   var totalGoals = hG + aG;
   var goalMins = mins.slice(0, totalGoals).sort(function(a, b) { return a - b; });
- 
   var sides = [];
   for (var j = 0; j < hG; j++) sides.push('H');
   for (var k = 0; k < aG; k++) sides.push('A');
   sides.sort(function() { return Math.random() - 0.5; });
- 
-  // Goal events with real player names
   var hs = 0, as2 = 0;
   var evs = goalMins.map(function(min, idx) {
-    var isH = sides[idx] === 'H';
-    if (isH) hs++; else as2++;
+    var isH = sides[idx] === 'H'; if (isH) hs++; else as2++;
     var ab = isH ? ha : aa;
     var ro = PL[ab] ? PL[ab].slice(1) : ['Unknown'];
-    return {
-      min: min, type: 'goal', team: ab,
-      scorer: ro[Math.floor(Math.random() * ro.length)],
-      hS: hs, aS: as2
-    };
+    return { min: min, type: 'goal', team: ab, scorer: ro[Math.floor(Math.random() * ro.length)], hS: hs, aS: as2 };
   });
- 
-  // Card events with real player names
-  var cardMult = 1 + ((state.simSet.refStrictness - 50) / 50) * 0.8;
-  var numCards = Math.max(0, Math.floor((Math.floor(Math.random() * 4) + 1) * cardMult));
-  if (state.simSet.rivalry) numCards += Math.floor(Math.random() * 3);
+  var numCards = Math.floor(Math.random() * 4) + 1;
   var cMins = mins.slice(totalGoals, totalGoals + numCards).sort(function(a, b) { return a - b; });
   cMins.forEach(function(min) {
     var cardTeam = Math.random() > 0.5 ? ha : aa;
     var roster = PL[cardTeam] || ['Unknown'];
-    evs.push({
-      min: min, type: 'yellow', team: cardTeam,
-      player: roster[Math.floor(Math.random() * roster.length)]
-    });
+    evs.push({ min: min, type: 'yellow', team: cardTeam, player: roster[Math.floor(Math.random() * roster.length)] });
   });
- 
   evs.sort(function(a, b) { return a.min - b.min; });
- 
-  // Metadata — same as original h2h
   var hS20 = STATS20.find(function(x) { return x.abbr === ha; }) || {};
   var aS20 = STATS20.find(function(x) { return x.abbr === aa; }) || {};
   var pressNote = (hS20.ppda && aS20.ppda) ?
     (hS20.ppda < 9 ? 'High press' : hS20.ppda < 12 ? 'Med press' : 'Low block') + ' (' + hS20.ppda + ') vs ' +
     (aS20.ppda < 9 ? 'High press' : aS20.ppda < 12 ? 'Med press' : 'Low block') + ' (' + aS20.ppda + ')' : '';
- 
   var o = dc.outcomes;
- 
-  // Tactic label from formations
-  var hForm = SIM_FORMATIONS[tate.simSet.homeFormation] || SIM_FORMATIONS['default'];
+  var hForm = SIM_FORMATIONS[state.simSet.homeFormation] || SIM_FORMATIONS['default'];
   var aForm = SIM_FORMATIONS[state.simSet.awayFormation] || SIM_FORMATIONS['default'];
   var tacticLabel = pressNote;
   if (hForm.label !== 'Default' || aForm.label !== 'Default') {
-    tacticLabel = (hForm.label !== 'Default' ? hForm.label : 'Default') + ' vs ' +
-      (aForm.label !== 'Default' ? aForm.label : 'Default');
+    tacticLabel = (hForm.label !== 'Default' ? hForm.label : 'Default') + ' vs ' + (aForm.label !== 'Default' ? aForm.label : 'Default');
   }
- 
-  return {
-    hG: hG, aG: aG, evs: evs,
-    hW: Math.round(o.homeWin * 100), dP: Math.round(o.draw * 100), aW: Math.round(o.awayWin * 100),
-    topScores: dc.topScores || [],
-    tacticLabel: tacticLabel || '',
-    pressNote: pressNote || '',
+  return { hG: hG, aG: aG, evs: evs, hW: Math.round(o.homeWin * 100), dP: Math.round(o.draw * 100), aW: Math.round(o.awayWin * 100),
+    topScores: dc.topScores || [], tacticLabel: tacticLabel || '', pressNote: pressNote || '',
     hBk: dc.hTD ? dc.hTD.bk : '', aBk: dc.aTD ? dc.aTD.bk : '',
     hBlock: (dc.hTD && dc.hTD.block) || '', aBlock: (dc.aTD && dc.aTD.block) || '',
-    hS20: hS20, aS20: aS20, hTeam: hT, aTeam: aT,
-    rho: dc.rho, hL: dc.hL, aL: dc.aL, matrix: dc.matrix
-  };
+    hS20: hS20, aS20: aS20, hTeam: hT, aTeam: aT, rho: dc.rho, hL: dc.hL, aL: dc.aL, matrix: dc.matrix };
 }
+ 
 function checkPred(actualH, actualA) {
-  var p = state.pred;
-  if (!p.locked) return;
+  var p = state.pred; if (!p.locked) return;
   var pH = parseInt(p.h, 10), pA = parseInt(p.a, 10);
   if (isNaN(pH) || isNaN(pA)) return;
   p.attempts++;
@@ -1058,251 +972,113 @@ function checkPred(actualH, actualA) {
 function doKickOff() {
   if (state.home === state.away || state.playing) return;
   if (playInterval) { clearInterval(playInterval); playInterval = null; }
- 
   var m;
-  try {
-    var hAdj = simGoalAdj('h');
-    var aAdj = simGoalAdj('a');
-    m = buildAdjustedMatch(state.home, state.away, hAdj, aAdj);
-  } catch (err) {
-    console.warn('Enhanced sim failed, using original h2h:', err);
-    m = h2h(state.home, state.away);
-  }
- 
-  state.match = m; state.evs = []; state.score = { h: 0, a: 0 };
-  state.playing = true; state.fin = false; render();
- 
+  try { var hAdj = simGoalAdj('h'); var aAdj = simGoalAdj('a'); m = buildAdjustedMatch(state.home, state.away, hAdj, aAdj); }
+  catch (err) { console.warn('Enhanced sim failed, using original h2h:', err); m = h2h(state.home, state.away); }
+  state.match = m; state.evs = []; state.score = { h: 0, a: 0 }; state.playing = true; state.fin = false; render();
   var i = 0;
   playInterval = setInterval(function() {
-    if (i >= m.evs.length) {
-      clearInterval(playInterval); playInterval = null;
-      setTimeout(function() {
-        state.fin = true; state.playing = false;
+    if (i >= m.evs.length) { clearInterval(playInterval); playInterval = null;
+      setTimeout(function() { state.fin = true; state.playing = false;
         state.hist = [{ home: m.hTeam.name, away: m.aTeam.name, hG: m.hG, aG: m.aG }].concat(state.hist.slice(0, 4));
-        try { checkPred(m.hG, m.aG); } catch (e) { console.warn('Prediction check failed:', e); }
-        saveMatchResult(m);
-        render();
-      }, 600);
-      return;
-    }
-    var ev = m.evs[i];
-    state.evs = state.evs.concat([ev]);
-    if (ev.type === 'goal') state.score = { h: ev.hS, a: ev.aS };
-    i++;
-    var feed = document.getElementById('feed');
-    var sc = document.getElementById('ls');
+        try { checkPred(m.hG, m.aG); } catch (e) {} saveMatchResult(m); render(); }, 600); return; }
+    var ev = m.evs[i]; state.evs = state.evs.concat([ev]);
+    if (ev.type === 'goal') state.score = { h: ev.hS, a: ev.aS }; i++;
+    var feed = document.getElementById('feed'); var sc = document.getElementById('ls');
     if (sc) sc.textContent = state.score.h + ' - ' + state.score.a;
-    if (feed) {
-      feed.innerHTML = state.evs.map(function(e) {
-        if (e.type === 'goal') {
-          return '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:rgba(201,168,76,0.06);border:1px solid #c9a84c22;margin-bottom:2px;border-radius:3px">' +
-            '<span>\u26BD</span>' +
-            '<span style="font-size:0.65rem;color:#555">' + e.min + "'" + '</span>' +
-            '<span style="font-size:0.75rem;color:#e0d6c2">' + esc(e.scorer) + '</span>' +
-            '<span style="margin-left:auto;font-size:0.6rem;color:#c9a84c;font-weight:700">' + e.hS + '-' + e.aS + '</span></div>';
-        } else {
-          return '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:#0c1018;border:1px solid #12161c;margin-bottom:2px;border-radius:3px">' +
-            '<span>\uD83D\uDFE8</span>' +
-            '<span style="font-size:0.65rem;color:#555">' + e.min + "'" + '</span>' +
-            '<span style="font-size:0.75rem;color:#bba85e">' + esc(e.player || e.team) + '</span>' +
-            '<span style="margin-left:auto;font-size:0.5rem;color:#555">' + esc(e.team) + '</span></div>';
-        }
-      }).join('');
-      feed.scrollTop = feed.scrollHeight;
-    }
+    if (feed) { feed.innerHTML = state.evs.map(function(e) {
+      if (e.type === 'goal') return '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:rgba(201,168,76,0.06);border:1px solid #c9a84c22;margin-bottom:2px;border-radius:3px"><span>\u26BD</span><span style="font-size:0.65rem;color:#555">' + e.min + "'" + '</span><span style="font-size:0.75rem;color:#e0d6c2">' + esc(e.scorer) + '</span><span style="margin-left:auto;font-size:0.6rem;color:#c9a84c;font-weight:700">' + e.hS + '-' + e.aS + '</span></div>';
+      return '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:#0c1018;border:1px solid #12161c;margin-bottom:2px;border-radius:3px"><span>\uD83D\uDFE8</span><span style="font-size:0.65rem;color:#555">' + e.min + "'" + '</span><span style="font-size:0.75rem;color:#bba85e">' + esc(e.player || e.team) + '</span><span style="margin-left:auto;font-size:0.5rem;color:#555">' + esc(e.team) + '</span></div>';
+    }).join(''); feed.scrollTop = feed.scrollHeight; }
   }, 850);
 }
-    
-// ── Slider (clean native range) ──
+ 
 function simSlider(id, val, label) {
   var col = val > 66 ? '#ff1744' : val > 33 ? '#ffd740' : '#00e676';
-  return '<div style="margin-bottom:10px" class="sim-slider-wrap">' +
-    '<div style="display:flex;justify-content:space-between;margin-bottom:3px">' +
-    '<span style="font-size:0.52rem;color:#666;text-transform:uppercase;letter-spacing:0.05em">' + label + '</span>' +
-    '<span class="sim-slider-val" style="font-size:0.58rem;color:' + col + ';font-weight:600">' + val + '</span></div>' +
-    '<input type="range" min="0" max="100" value="' + val + '" id="' + id + '" data-action="simSlider">' +
-    '</div>';
-}
-function simFormSelect(id, val) {
-  return '<select class="S" id="' + id + '" data-action="simSetting" style="font-size:0.62rem;padding:4px 6px">' +
-    Object.keys(SIM_FORMATIONS).map(function(k) {
-      return '<option value="' + k + '"' + (k === val ? ' selected' : '') + '>' + SIM_FORMATIONS[k].label + '</option>';
-    }).join('') + '</select>';
+  return '<div style="margin-bottom:10px" class="sim-slider-wrap"><div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="font-size:0.52rem;color:#666;text-transform:uppercase;letter-spacing:0.05em">' + label + '</span><span class="sim-slider-val" style="font-size:0.58rem;color:' + col + ';font-weight:600">' + val + '</span></div><input type="range" min="0" max="100" value="' + val + '" id="' + id + '" data-action="simSlider"></div>';
 }
  
-function simWeatherSelect() {
-  return '<select class="S" id="sim_weather" data-action="simSetting" style="font-size:0.62rem;padding:4px 6px">' +
-    Object.keys(SIM_WEATHER).map(function(k) {
-      return '<option value="' + k + '"' + (k === state.simSet.weather ? ' selected' : '') + '>' + SIM_WEATHER[k].label + '</option>';
-    }).join('') + '</select>';
+function simFormSelect(id, val) {
+  return '<select class="S" id="' + id + '" data-action="simSetting" style="font-size:0.62rem;padding:4px 6px">' +
+    Object.keys(SIM_FORMATIONS).map(function(k) { return '<option value="' + k + '"' + (k === val ? ' selected' : '') + '>' + SIM_FORMATIONS[k].label + '</option>'; }).join('') + '</select>';
 }
  
 function renderSimulator() {
   var hT = TEAMS.find(function(t) { return t.abbr === state.home; });
   var aT = TEAMS.find(function(t) { return t.abbr === state.away; });
   var hM = getMomentum(hT.form), aM = getMomentum(aT.form);
-  var ss = state.sim, pr = state.pred;
+  var ss = state.simSet, pr = state.pred;
+  if (!ss) { ss = state.simSet = { homeRotation:0, awayRotation:0, homeFormation:'default', awayFormation:'default', homeMorale:50, awayMorale:50 }; }
+  if (!pr) { pr = state.pred = { h:'', a:'', locked:false, coins:0, streak:0, correct:0, attempts:0, lastMsg:'', lastReward:0, lastPH:'', lastPA:'' }; }
+  if (!SIM_FORMATIONS[ss.homeFormation]) ss.homeFormation = 'default';
+  if (!SIM_FORMATIONS[ss.awayFormation]) ss.awayFormation = 'default';
  
-  // Team cards
   var teamCards = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">' +
     [{ t: hT, m: hM }, { t: aT, m: aM }].map(function(x) {
       var s20 = STATS20.find(function(s) { return s.abbr === x.t.abbr; }) || {};
       var ppda_col = s20.ppda ? (s20.ppda < 9 ? '#ff1744' : s20.ppda < 12 ? '#ffd740' : '#4fc3f7') : '#555';
-      return '<div style="background:#0c1018;border:1px solid #181e28;padding:10px"><div style="font-size:0.6rem;color:#555;margin-bottom:4px">' + esc(x.t.name) + '</div>' +
-        '<div style="display:flex;gap:3px;margin-bottom:5px">' + x.t.form.map(colorBox).join('') + '</div>' +
-        '<div style="font-size:0.65rem;color:' + x.m.color + ';margin-bottom:4px">' + x.m.emoji + ' ' + x.m.label + '</div>' +
-        (s20.ppda ? '<div style="display:flex;gap:8px;flex-wrap:wrap"><span style="font-size:0.56rem;color:#555">PPDA <span style="color:' + ppda_col + '">' + s20.ppda + '</span></span><span style="font-size:0.56rem;color:#555">xG <span style="color:#69f0ae">' + s20.xg + '</span></span><span style="font-size:0.56rem;color:#555">xGA <span style="color:#ffd740">' + s20.xga + '</span></span></div>' : '') + '</div>';
+      return '<div style="background:#0c1018;border:1px solid #181e28;padding:10px"><div style="font-size:0.6rem;color:#555;margin-bottom:4px">' + esc(x.t.name) + '</div><div style="display:flex;gap:3px;margin-bottom:5px">' + x.t.form.map(colorBox).join('') + '</div><div style="font-size:0.65rem;color:' + x.m.color + ';margin-bottom:4px">' + x.m.emoji + ' ' + x.m.label + '</div>' + (s20.ppda ? '<div style="display:flex;gap:8px;flex-wrap:wrap"><span style="font-size:0.56rem;color:#555">PPDA <span style="color:' + ppda_col + '">' + s20.ppda + '</span></span><span style="font-size:0.56rem;color:#555">xG <span style="color:#69f0ae">' + s20.xg + '</span></span><span style="font-size:0.56rem;color:#555">xGA <span style="color:#ffd740">' + s20.xga + '</span></span></div>' : '') + '</div>';
     }).join('') + '</div>';
  
-  // Probabilities
   var preProbs = '';
   if (!state.match && hT.abbr !== aT.abbr) {
     var dc = dcAnalyse(state.home, state.away); var o = dc.outcomes; var topS = dc.topScores.slice(0, 3);
-    preProbs = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:8px">' +
-      [['Win', o.homeWin, '#00e676'], ['Draw', o.draw, '#ffd740'], ['Loss', o.awayWin, '#ff1744']].map(function(x) {
-        return '<div style="background:#0c1018;border:1px solid #181e28;padding:10px;text-align:center"><div style="font-size:0.54rem;color:#555;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px">' + x[0] + '</div><div style="font-family:Georgia,serif;font-size:1.4rem;font-weight:700;color:' + x[2] + '">' + (x[1] * 100).toFixed(1) + '%</div></div>';
-      }).join('') + '</div>' +
-      '<div style="background:#0c1018;border:1px solid #181e28;padding:8px 12px;margin-bottom:12px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap"><span style="font-size:0.54rem;color:#555">DC Predicted:</span>' +
-      topS.map(function(s) { return '<span style="font-size:0.72rem;color:#c9a84c;font-weight:600">' + s.h + '-' + s.a + '</span><span style="font-size:0.54rem;color:#555"> (' + (s.p * 100).toFixed(1) + '%)</span>'; }).join(' \u00A0 ') + '</div>';
+    preProbs = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:8px">' + [['Win', o.homeWin, '#00e676'], ['Draw', o.draw, '#ffd740'], ['Loss', o.awayWin, '#ff1744']].map(function(x) { return '<div style="background:#0c1018;border:1px solid #181e28;padding:10px;text-align:center"><div style="font-size:0.54rem;color:#555;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px">' + x[0] + '</div><div style="font-family:Georgia,serif;font-size:1.4rem;font-weight:700;color:' + x[2] + '">' + (x[1] * 100).toFixed(1) + '%</div></div>'; }).join('') + '</div>' +
+      '<div style="background:#0c1018;border:1px solid #181e28;padding:8px 12px;margin-bottom:12px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap"><span style="font-size:0.54rem;color:#555">DC Predicted:</span>' + topS.map(function(s) { return '<span style="font-size:0.72rem;color:#c9a84c;font-weight:600">' + s.h + '-' + s.a + '</span><span style="font-size:0.54rem;color:#555"> (' + (s.p * 100).toFixed(1) + '%)</span>'; }).join(' \u00A0 ') + '</div>';
   }
  
-  // Settings panel
   var settingsPanel = '';
   if (!state.playing && !state.fin) {
     var hF = SIM_FORMATIONS[ss.homeFormation] || SIM_FORMATIONS['default'];
     var aF = SIM_FORMATIONS[ss.awayFormation] || SIM_FORMATIONS['default'];
-    var wInfo = SIM_WEATHER[ss.weather] || SIM_WEATHER['clear'];
- 
     settingsPanel = '<div style="background:#080c12;border:1px solid #181e28;padding:12px;margin-bottom:12px;border-radius:4px">' +
       '<div style="font-size:0.6rem;color:#c9a84c;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px">\u2699\uFE0F Match Settings</div>' +
- 
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">' +
- 
-      '<div style="background:#0c1018;border:1px solid #151b25;padding:8px;border-radius:3px">' +
-      '<div style="font-size:0.55rem;color:#c9a84c;margin-bottom:6px">' + esc(hT.name) + '</div>' +
-      '<div style="font-size:0.48rem;color:#555;margin-bottom:2px">Formation</div>' +
-      simFormSelect('sim_homeFormation', ss.homeFormation) +
-      '<div style="font-size:0.44rem;color:#444;margin:3px 0 6px;font-style:italic">' + hF.label +
-      (hF.atk !== 0 ? ' (ATK' + (hF.atk > 0 ? '+' : '') + (hF.atk * 100).toFixed(0) + '% DEF' + (hF.def > 0 ? '+' : '') + (hF.def * 100).toFixed(0) + '%)' : '') + '</div>' +
-      simSlider('sim_homeRotation', ss.homeRotation, '\uD83D\uDD04 Squad Rotation') +
-      simSlider('sim_homeMorale', ss.homeMorale, '\uD83D\uDCAA Morale') +
-      '</div>' +
- 
-      '<div style="background:#0c1018;border:1px solid #151b25;padding:8px;border-radius:3px">' +
-      '<div style="font-size:0.55rem;color:#c9a84c;margin-bottom:6px">' + esc(aT.name) + '</div>' +
-      '<div style="font-size:0.48rem;color:#555;margin-bottom:2px">Formation</div>' +
-      simFormSelect('sim_awayFormation', ss.awayFormation) +
-      '<div style="font-size:0.44rem;color:#444;margin:3px 0 6px;font-style:italic">' + aF.label +
-      (aF.atk !== 0 ? ' (ATK' + (aF.atk > 0 ? '+' : '') + (aF.atk * 100).toFixed(0) + '% DEF' + (aF.def > 0 ? '+' : '') + (aF.def * 100).toFixed(0) + '%)' : '') + '</div>' +
-      simSlider('sim_awayRotation', ss.awayRotation, '\uD83D\uDD04 Squad Rotation') +
-      simSlider('sim_awayMorale', ss.awayMorale, '\uD83D\uDCAA Morale') +
-      '</div>' +
- 
-      '</div>' +
- 
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px">' +
-      '<div style="background:#0c1018;border:1px solid #151b25;padding:8px;border-radius:3px">' +
-      '<div style="font-size:0.48rem;color:#555;margin-bottom:2px">Weather</div>' +
-      simWeatherSelect() +
-      '<div style="font-size:0.42rem;color:#444;margin-top:3px">Chaos: ' + (wInfo.chaos * 100).toFixed(0) + '%</div></div>' +
-      '<div style="background:#0c1018;border:1px solid #151b25;padding:8px;border-radius:3px">' +
-      simSlider('sim_refStrictness', ss.refStrictness, '\uD83D\uDFE8 Ref Strictness') +
-      '</div></div>' +
- 
-      '<div style="display:flex;gap:16px;padding:4px 0">' +
-      '<label style="display:flex;align-items:center;gap:6px;font-size:0.55rem;color:#666;cursor:pointer">' +
-      '<input type="checkbox" id="sim_homeAdv" data-action="simCheck"' + (ss.homeAdvantage ? ' checked' : '') + ' style="accent-color:#c9a84c"> \uD83C\uDFDF\uFE0F Home Advantage</label>' +
-      '<label style="display:flex;align-items:center;gap:6px;font-size:0.55rem;color:#666;cursor:pointer">' +
-      '<input type="checkbox" id="sim_rivalry" data-action="simCheck"' + (ss.rivalry ? ' checked' : '') + ' style="accent-color:#ff1744"> \uD83D\uDD25 Derby</label>' +
+      '<div style="background:#0c1018;border:1px solid #151b25;padding:8px;border-radius:3px"><div style="font-size:0.55rem;color:#c9a84c;margin-bottom:6px">' + esc(hT.name) + '</div><div style="font-size:0.48rem;color:#555;margin-bottom:2px">Formation</div>' + simFormSelect('sim_homeFormation', ss.homeFormation) + '<div style="font-size:0.44rem;color:#444;margin:3px 0 6px;font-style:italic">' + hF.label + (hF.atk !== 0 ? ' (ATK' + (hF.atk > 0 ? '+' : '') + (hF.atk * 100).toFixed(0) + '% DEF' + (hF.def > 0 ? '+' : '') + (hF.def * 100).toFixed(0) + '%)' : '') + '</div>' + simSlider('sim_homeRotation', ss.homeRotation, '\uD83D\uDD04 Squad Rotation') + simSlider('sim_homeMorale', ss.homeMorale, '\uD83D\uDCAA Morale') + '</div>' +
+      '<div style="background:#0c1018;border:1px solid #151b25;padding:8px;border-radius:3px"><div style="font-size:0.55rem;color:#c9a84c;margin-bottom:6px">' + esc(aT.name) + '</div><div style="font-size:0.48rem;color:#555;margin-bottom:2px">Formation</div>' + simFormSelect('sim_awayFormation', ss.awayFormation) + '<div style="font-size:0.44rem;color:#444;margin:3px 0 6px;font-style:italic">' + aF.label + (aF.atk !== 0 ? ' (ATK' + (aF.atk > 0 ? '+' : '') + (aF.atk * 100).toFixed(0) + '% DEF' + (aF.def > 0 ? '+' : '') + (aF.def * 100).toFixed(0) + '%)' : '') + '</div>' + simSlider('sim_awayRotation', ss.awayRotation, '\uD83D\uDD04 Squad Rotation') + simSlider('sim_awayMorale', ss.awayMorale, '\uD83D\uDCAA Morale') + '</div>' +
       '</div></div>';
   }
  
-  // Prediction panel
   var predPanel = '';
   if (!state.playing && !state.fin && hT.abbr !== aT.abbr) {
     predPanel = '<div style="background:#080c12;border:1px solid #c9a84c22;padding:12px;margin-bottom:12px;border-radius:4px">' +
-      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">' +
-      '<span style="font-size:0.6rem;color:#c9a84c;font-weight:600;letter-spacing:0.1em;text-transform:uppercase">\uD83C\uDFAF Predict the Score</span>' +
-      '<span style="font-size:0.58rem;color:#c9a84c;background:#c9a84c15;padding:2px 8px;border-radius:10px;border:1px solid #c9a84c33">\uD83E\uDE99 ' + pr.coins + '</span></div>' +
- 
-      '<div style="display:grid;grid-template-columns:1fr 24px 1fr;gap:6px;align-items:center;margin-bottom:8px">' +
-      '<div style="text-align:center"><div style="font-size:0.48rem;color:#555;margin-bottom:2px">' + esc(hT.name) + '</div>' +
-      '<input type="number" id="pred_h" min="0" max="15" value="' + (pr.h !== '' ? pr.h : '') + '" data-action="predInput"' + (pr.locked ? ' disabled' : '') +
-      ' style="width:100%;text-align:center;font-size:1.1rem;font-weight:700;padding:6px;background:#0c1018;border:1px solid ' + (pr.locked ? '#c9a84c44' : '#252b38') + ';color:#c9a84c;border-radius:3px;font-family:Georgia,serif"></div>' +
-      '<div style="text-align:center;font-size:0.7rem;color:#555;font-weight:700">-</div>' +
-      '<div style="text-align:center"><div style="font-size:0.48rem;color:#555;margin-bottom:2px">' + esc(aT.name) + '</div>' +
-      '<input type="number" id="pred_a" min="0" max="15" value="' + (pr.a !== '' ? pr.a : '') + '" data-action="predInput"' + (pr.locked ? ' disabled' : '') +
-      ' style="width:100%;text-align:center;font-size:1.1rem;font-weight:700;padding:6px;background:#0c1018;border:1px solid ' + (pr.locked ? '#c9a84c44' : '#252b38') + ';color:#c9a84c;border-radius:3px;font-family:Georgia,serif"></div></div>' +
- 
-      '<div style="text-align:center;margin-bottom:6px">' +
-      (!pr.locked ?
-        '<button class="B" data-action="lockPred" style="font-size:0.6rem;padding:5px 14px">\uD83D\uDD12 Lock Prediction</button>' :
-        '<span style="font-size:0.65rem;color:#00e676">\u2713 Locked: ' + pr.h + ' - ' + pr.a + '</span> ' +
-        '<button class="B" data-action="unlockPred" style="font-size:0.5rem;padding:3px 8px;background:#1a1f2e;border:1px solid #252b38;margin-left:6px">Change</button>'
-      ) + '</div>' +
- 
-      '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-bottom:4px">' +
-      [['\uD83C\uDFAF Exact', '+50', '#00e676'], ['\uD83D\uDCD0 GD Match', '+25', '#69f0ae'], ['\u2705 Result', '+10', '#ffd740']].map(function(r) {
-        return '<div style="text-align:center;padding:3px;background:#0c1018;border:1px solid #151b25;border-radius:2px"><div style="font-size:0.44rem;color:#555">' + r[0] + '</div><div style="font-size:0.55rem;color:' + r[2] + ';font-weight:600">' + r[1] + '</div></div>';
-      }).join('') + '</div>' +
- 
-      '<div style="display:flex;justify-content:center;gap:12px;font-size:0.48rem;color:#444">' +
-      '<span>Streak: ' + (pr.streak >= 3 ? '\uD83D\uDD25 ' : '') + pr.streak + '</span>' +
-      '<span>Hit rate: ' + (pr.attempts > 0 ? ((pr.correct / pr.attempts) * 100).toFixed(0) + '%' : '--') + '</span>' +
-      '<span>Played: ' + pr.attempts + '</span></div></div>';
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><span style="font-size:0.6rem;color:#c9a84c;font-weight:600;letter-spacing:0.1em;text-transform:uppercase">\uD83C\uDFAF Predict the Score</span><span style="font-size:0.58rem;color:#c9a84c;background:#c9a84c15;padding:2px 8px;border-radius:10px;border:1px solid #c9a84c33">\uD83E\uDE99 ' + pr.coins + '</span></div>' +
+      '<div style="display:grid;grid-template-columns:1fr 24px 1fr;gap:6px;align-items:center;margin-bottom:8px"><div style="text-align:center"><div style="font-size:0.48rem;color:#555;margin-bottom:2px">' + esc(hT.name) + '</div><input type="number" id="pred_h" min="0" max="15" value="' + (pr.h !== '' ? pr.h : '') + '" data-action="predInput"' + (pr.locked ? ' disabled' : '') + ' style="width:100%;text-align:center;font-size:1.1rem;font-weight:700;padding:6px;background:#0c1018;border:1px solid ' + (pr.locked ? '#c9a84c44' : '#252b38') + ';color:#c9a84c;border-radius:3px;font-family:Georgia,serif"></div><div style="text-align:center;font-size:0.7rem;color:#555;font-weight:700">-</div><div style="text-align:center"><div style="font-size:0.48rem;color:#555;margin-bottom:2px">' + esc(aT.name) + '</div><input type="number" id="pred_a" min="0" max="15" value="' + (pr.a !== '' ? pr.a : '') + '" data-action="predInput"' + (pr.locked ? ' disabled' : '') + ' style="width:100%;text-align:center;font-size:1.1rem;font-weight:700;padding:6px;background:#0c1018;border:1px solid ' + (pr.locked ? '#c9a84c44' : '#252b38') + ';color:#c9a84c;border-radius:3px;font-family:Georgia,serif"></div></div>' +
+      '<div style="text-align:center;margin-bottom:6px">' + (!pr.locked ? '<button class="B" data-action="lockPred" style="font-size:0.6rem;padding:5px 14px">\uD83D\uDD12 Lock Prediction</button>' : '<span style="font-size:0.65rem;color:#00e676">\u2713 Locked: ' + pr.h + ' - ' + pr.a + '</span> <button class="B" data-action="unlockPred" style="font-size:0.5rem;padding:3px 8px;background:#1a1f2e;border:1px solid #252b38;margin-left:6px">Change</button>') + '</div>' +
+      '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-bottom:4px">' + [['\uD83C\uDFAF Exact', '+50', '#00e676'], ['\uD83D\uDCD0 GD Match', '+25', '#69f0ae'], ['\u2705 Result', '+10', '#ffd740']].map(function(r) { return '<div style="text-align:center;padding:3px;background:#0c1018;border:1px solid #151b25;border-radius:2px"><div style="font-size:0.44rem;color:#555">' + r[0] + '</div><div style="font-size:0.55rem;color:' + r[2] + ';font-weight:600">' + r[1] + '</div></div>'; }).join('') + '</div>' +
+      '<div style="display:flex;justify-content:center;gap:12px;font-size:0.48rem;color:#444"><span>Streak: ' + (pr.streak >= 3 ? '\uD83D\uDD25 ' : '') + pr.streak + '</span><span>Hit rate: ' + (pr.attempts > 0 ? ((pr.correct / pr.attempts) * 100).toFixed(0) + '%' : '--') + '</span><span>Played: ' + pr.attempts + '</span></div></div>';
   }
  
-  // Prediction result
   var predResult = '';
   if (state.fin && pr.lastMsg) {
     var bc = pr.lastReward >= 50 ? '#00e676' : pr.lastReward > 0 ? '#ffd740' : '#ff1744';
-    predResult = '<div style="background:' + bc + '0a;border:1px solid ' + bc + '33;padding:10px;margin-bottom:10px;border-radius:4px;text-align:center">' +
-      '<div style="font-size:0.75rem;margin-bottom:3px">' + pr.lastMsg + '</div>' +
-      '<div style="font-size:0.55rem;color:#555">You predicted: ' + pr.lastPH + '-' + pr.lastPA + ' \u2014 Actual: ' + state.match.hG + '-' + state.match.aG + '</div>' +
-      '<div style="font-size:0.6rem;color:#c9a84c;margin-top:3px">Balance: \uD83E\uDE99 ' + pr.coins + '</div></div>';
+    predResult = '<div style="background:' + bc + '0a;border:1px solid ' + bc + '33;padding:10px;margin-bottom:10px;border-radius:4px;text-align:center"><div style="font-size:0.75rem;margin-bottom:3px">' + pr.lastMsg + '</div><div style="font-size:0.55rem;color:#555">You predicted: ' + pr.lastPH + '-' + pr.lastPA + ' \u2014 Actual: ' + state.match.hG + '-' + state.match.aG + '</div><div style="font-size:0.6rem;color:#c9a84c;margin-top:3px">Balance: \uD83E\uDE99 ' + pr.coins + '</div></div>';
   }
  
-  // Match area
   var matchArea = '';
   if (state.match) {
-    var topScoreInfo = state.match.topScores ? '<div style="display:flex;gap:8px;justify-content:center;margin-top:6px;flex-wrap:wrap">' + state.match.topScores.slice(0, 4).map(function(s) { var isActual = s.h === state.match.hG && s.a === state.match.aG; return '<span style="font-size:0.6rem;padding:2px 6px;background:' + (isActual ? 'rgba(201,168,76,0.2)' : 'transparent') + ';color:' + (isActual ? '#c9a84c' : '#555') + ';border:1px solid ' + (isActual ? '#c9a84c' : '#222') + ';border-radius:2px">' + s.h + '-' + s.a + ' (' + (s.p * 100).toFixed(1) + '%)</span>'; }).join('') + '</div>' : '';
- 
+    var topScoreInfo = (state.match.topScores && state.match.topScores.length) ? '<div style="display:flex;gap:8px;justify-content:center;margin-top:6px;flex-wrap:wrap">' + state.match.topScores.slice(0, 4).map(function(s) { var isActual = s.h === state.match.hG && s.a === state.match.aG; return '<span style="font-size:0.6rem;padding:2px 6px;background:' + (isActual ? 'rgba(201,168,76,0.2)' : 'transparent') + ';color:' + (isActual ? '#c9a84c' : '#555') + ';border:1px solid ' + (isActual ? '#c9a84c' : '#222') + ';border-radius:2px">' + s.h + '-' + s.a + ' (' + (s.p * 100).toFixed(1) + '%)</span>'; }).join('') + '</div>' : '';
     var badges = [];
-    if (ss.homeFormation !== 'default') badges.push(SIM_FORMATIONS[ss.homeFormation].label + ' (H)');
-    if (ss.awayFormation !== 'default') badges.push(SIM_FORMATIONS[ss.awayFormation].label + ' (A)');
-    if (ss.weather !== 'clear') badges.push(SIM_WEATHER[ss.weather].label);
-    if (ss.rivalry) badges.push('\uD83D\uDD25 Derby');
+    if (ss.homeFormation && ss.homeFormation !== 'default' && SIM_FORMATIONS[ss.homeFormation]) badges.push(SIM_FORMATIONS[ss.homeFormation].label + ' (H)');
+    if (ss.awayFormation && ss.awayFormation !== 'default' && SIM_FORMATIONS[ss.awayFormation]) badges.push(SIM_FORMATIONS[ss.awayFormation].label + ' (A)');
     if (ss.homeRotation > 30) badges.push('\uD83D\uDD04 Rot. H');
     if (ss.awayRotation > 30) badges.push('\uD83D\uDD04 Rot. A');
     var badgeHtml = badges.length ? '<div style="display:flex;gap:4px;justify-content:center;flex-wrap:wrap;margin-top:6px">' + badges.map(function(b) { return '<span style="font-size:0.46rem;padding:2px 6px;background:#0a0e14;border:1px solid #1a1f2e;border-radius:10px;color:#888">' + b + '</span>'; }).join('') + '</div>' : '';
- 
-    matchArea = '<div style="background:#0c1018;border:1px solid #181e28;padding:18px 20px;margin-bottom:8px;text-align:center">' +
-      '<div style="font-size:0.6rem;color:#555;margin-bottom:4px">' + (state.fin ? 'Full Time' : '<span class="pulse" style="color:#ff1744;font-size:0.7rem">LIVE</span>') + '</div>' +
-      '<div style="font-family:Georgia,serif;font-size:3rem;font-weight:900;color:#c9a84c" id="ls">' + state.score.h + ' - ' + state.score.a + '</div>' +
-      '<div style="font-size:0.72rem;color:#555;margin-top:4px">' + esc(state.match.hTeam.name) + ' vs ' + esc(state.match.aTeam.name) + '</div>' +
-      '<div style="font-size:0.6rem;color:#444;margin-top:6px">' + state.match.tacticLabel + '</div>' +
-      (state.match.pressNote ? '<div style="font-size:0.56rem;color:#555;margin-top:3px">' + state.match.pressNote + '</div>' : '') +
-      badgeHtml + topScoreInfo + '</div><div id="feed" style="max-height:220px;overflow-y:auto;margin-bottom:8px"></div>';
+    matchArea = '<div style="background:#0c1018;border:1px solid #181e28;padding:18px 20px;margin-bottom:8px;text-align:center"><div style="font-size:0.6rem;color:#555;margin-bottom:4px">' + (state.fin ? 'Full Time' : '<span class="pulse" style="color:#ff1744;font-size:0.7rem">LIVE</span>') + '</div><div style="font-family:Georgia,serif;font-size:3rem;font-weight:900;color:#c9a84c" id="ls">' + state.score.h + ' - ' + state.score.a + '</div><div style="font-size:0.72rem;color:#555;margin-top:4px">' + esc(state.match.hTeam.name) + ' vs ' + esc(state.match.aTeam.name) + '</div><div style="font-size:0.6rem;color:#444;margin-top:6px">' + (state.match.tacticLabel || '') + '</div>' + (state.match.pressNote ? '<div style="font-size:0.56rem;color:#555;margin-top:3px">' + state.match.pressNote + '</div>' : '') + badgeHtml + topScoreInfo + '</div><div id="feed" style="max-height:220px;overflow-y:auto;margin-bottom:8px"></div>';
   }
  
-  // History
   var histRows = state.hist.length ? state.hist.map(function(h) { return '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 10px;border-bottom:1px solid #0d1117;font-size:0.7rem"><span style="color:#888">' + esc(h.home) + '</span><span style="color:#c9a84c;font-weight:700">' + h.hG + ' - ' + h.aG + '</span><span style="color:#888">' + esc(h.away) + '</span></div>'; }).join('') : '';
  
-  // Buttons
-  var btnArea = '<div style="text-align:center;margin-bottom:14px">' +
-    '<button class="B" data-action="kickoff" ' + (state.home === state.away || state.playing ? 'disabled' : '') + '>' +
-    (state.playing ? '\u25CF Live\u2026' : state.fin ? '\u21BA Replay' : '\u26BD Kick Off') + '</button>';
-  if (state.fin) {
-    btnArea += ' <button class="B" data-action="newMatch" style="background:#1a1f2e;border:1px solid #252b38;margin-left:8px">New Match</button>';
-  }
+  var btnArea = '<div style="text-align:center;margin-bottom:14px"><button class="B" data-action="kickoff" ' + (state.home === state.away || state.playing ? 'disabled' : '') + '>' + (state.playing ? '\u25CF Live\u2026' : state.fin ? '\u21BA Replay' : '\u26BD Kick Off') + '</button>';
+  if (state.fin) btnArea += ' <button class="B" data-action="newMatch" style="background:#1a1f2e;border:1px solid #252b38;margin-left:8px">New Match</button>';
   btnArea += '</div>';
  
   return '<div><div style="font-family:Georgia,serif;font-size:1.25rem;font-weight:700;margin-bottom:16px">H2H Simulator</div>' +
     '<div style="display:grid;grid-template-columns:1fr 40px 1fr;gap:8px;align-items:end;margin-bottom:12px"><div>' + buildSelect('sh', state.home) + '</div><div style="text-align:center;font-size:0.7rem;color:#555;padding-bottom:10px">vs</div><div>' + buildSelect('sa', state.away) + '</div></div>' +
     teamCards + preProbs + settingsPanel + predPanel + predResult + btnArea + matchArea +
-    (state.hist.length ? '<div style="background:#0c1018;border:1px solid #181e28;margin-top:8px"><div style="padding:8px 10px;font-size:0.58rem;color:#555;letter-spacing:0.1em;text-transform:uppercase;border-bottom:1px solid #151b25">Match History</div>' + histRows + '</div>' : '') +
-    '</div>';
+    (state.hist.length ? '<div style="background:#0c1018;border:1px solid #181e28;margin-top:8px"><div style="padding:8px 10px;font-size:0.58rem;color:#555;letter-spacing:0.1em;text-transform:uppercase;border-bottom:1px solid #151b25">Match History</div>' + histRows + '</div>' : '') + '</div>';
 }
+ 
 // ═══════════════════════════════════════════════════
 // MONTE CARLO TAB (WITH COMPARISON)
 // ═══════════════════════════════════════════════════
@@ -1453,70 +1229,31 @@ document.addEventListener('click', function(e) {
       if (ac === 'mc') { doMC(); return; }
       if (ac === 'kickoff') { if (!el.disabled) doKickOff(); return; }
       if (ac.indexOf('tab-') === 0) { setTab(ac.slice(4)); return; }
-      if (ac === 'lockPred') {
-        var ph2 = document.getElementById('pred_h'), pa2 = document.getElementById('pred_a');
-        if (ph2 && pa2 && ph2.value !== '' && pa2.value !== '') {
-          state.pred.h = ph2.value; state.pred.a = pa2.value;
-          state.pred.locked = true; state.pred.lastMsg = '';
-        }
-        render(); return;
-      }
-      if (ac === 'unlockPred') {
-        state.pred.locked = false; state.pred.lastMsg = '';
-        render(); return;
-      }
-      if (ac === 'newMatch') {
-        state.match = null; state.evs = []; state.score = { h: 0, a: 0 };
-        state.playing = false; state.fin = false;
-        state.pred.locked = false; state.pred.h = ''; state.pred.a = '';
-        state.pred.lastMsg = ''; state.pred.lastReward = 0;
-        if (playInterval) { clearInterval(playInterval); playInterval = null; }
-        render(); return;
-      }
+      if (ac === 'lockPred') { var ph2 = document.getElementById('pred_h'), pa2 = document.getElementById('pred_a'); if (ph2 && pa2 && ph2.value !== '' && pa2.value !== '') { state.pred.h = ph2.value; state.pred.a = pa2.value; state.pred.locked = true; state.pred.lastMsg = ''; } render(); return; }
+      if (ac === 'unlockPred') { state.pred.locked = false; state.pred.lastMsg = ''; render(); return; }
+      if (ac === 'newMatch') { state.match = null; state.evs = []; state.score = { h: 0, a: 0 }; state.playing = false; state.fin = false; state.pred.locked = false; state.pred.h = ''; state.pred.a = ''; state.pred.lastMsg = ''; state.pred.lastReward = 0; if (playInterval) { clearInterval(playInterval); playInterval = null; } render(); return; }
     }
     el = el.parentNode;
   }
 });
- 
 document.addEventListener('change', function(e) {
   var el = e.target;
   if (el && el.getAttribute) {
     var ac = el.getAttribute('data-action');
-    if (ac === 'selchange') {
-      var sh = document.getElementById('sh'), sa = document.getElementById('sa');
-      if (sh) state.home = sh.value; if (sa) state.away = sa.value;
-      state.match = null; state.evs = []; state.score = { h: 0, a: 0 };
-      state.fin = false; state.playing = false;
-      state.pred.locked = false; state.pred.h = ''; state.pred.a = ''; state.pred.lastMsg = '';
-      if (playInterval) { clearInterval(playInterval); playInterval = null; }
-      render();
-    }
-    if (ac === 'predchange') {
-      var phx = document.getElementById('ph'), pax = document.getElementById('pa');
-      if (phx) state.predHome = phx.value; if (pax) state.predAway = pax.value;
-      render();
-    }
-    if (ac === 'simSetting') {
-      if (el.id === 'sim_homeFormation') tate.simSet.homeFormation = el.value;
-      else if (el.id === 'sim_awayFormation') state.simSet.awayFormation = el.value;
-      else if (el.id === 'sim_weather') state.simSet.weather = el.value;
-      render();
-    }
-    if (ac === 'simCheck') {
-      if (el.id === 'sim_homeAdv') state.simSet.homeAdvantage = el.checked;
-      if (el.id === 'sim_rivalry') state.simSet.rivalry = el.checked;
-    }
-    // Sliders: only update state + full render on RELEASE (change event)
-    if (ac === 'simSlider') {
-      var v2 = parseInt(el.value, 10);
-      if (el.id === 'sim_homeRotation') state.simSet.homeRotation = v2;
-      else if (el.id === 'sim_awayRotation') state.simSet.awayRotation = v2;
-      else if (el.id === 'sim_homeMorale') tate.simSet.homeMorale = v2;
-      else if (el.id === 'sim_awayMorale') state.simSet.awayMorale = v2;
-      else if (el.id === 'sim_refStrictness') state.simSet.refStrictness = v2;
-      render();
-    }
+    if (ac === 'selchange') { var sh = document.getElementById('sh'), sa = document.getElementById('sa'); if (sh) state.home = sh.value; if (sa) state.away = sa.value; state.match = null; state.evs = []; state.score = { h: 0, a: 0 }; state.fin = false; state.playing = false; state.pred.locked = false; state.pred.h = ''; state.pred.a = ''; state.pred.lastMsg = ''; if (playInterval) { clearInterval(playInterval); playInterval = null; } render(); }
+    if (ac === 'predchange') { var phx = document.getElementById('ph'), pax = document.getElementById('pa'); if (phx) state.predHome = phx.value; if (pax) state.predAway = pax.value; render(); }
+    if (ac === 'simSetting') { if (el.id === 'sim_homeFormation') state.simSet.homeFormation = el.value; else if (el.id === 'sim_awayFormation') state.simSet.awayFormation = el.value; render(); }
+    if (ac === 'simSlider') { var v2 = parseInt(el.value, 10); if (el.id === 'sim_homeRotation') state.simSet.homeRotation = v2; else if (el.id === 'sim_awayRotation') state.simSet.awayRotation = v2; else if (el.id === 'sim_homeMorale') state.simSet.homeMorale = v2; else if (el.id === 'sim_awayMorale') state.simSet.awayMorale = v2; render(); }
   }
+});
+document.addEventListener('input', function(e) {
+  var el = e.target; if (!el || !el.getAttribute) return; var ac = el.getAttribute('data-action');
+  if (ac === 'simSlider') { var v = parseInt(el.value, 10); var col = v > 66 ? '#ff1744' : v > 33 ? '#ffd740' : '#00e676'; var wrap = el.closest('.sim-slider-wrap'); if (wrap) { var valEl = wrap.querySelector('.sim-slider-val'); if (valEl) { valEl.textContent = v; valEl.style.color = col; } } }
+  if (ac === 'predInput') { if (el.id === 'pred_h') state.pred.h = el.value; if (el.id === 'pred_a') state.pred.a = el.value; }
+});
+document.addEventListener('DOMContentLoaded', function() {
+  try { render(); trackSession(); loadMatchHistory(); }
+  catch (e) { var root = document.getElementById('root'); if (root) { root.style.cssText = 'background:#07090d;color:#ff1744;padding:20px;font-family:monospace'; root.innerHTML = '<h2>Error</h2><pre>' + e.message + '\n' + (e.stack || '') + '</pre>'; } }
 });
  
 // Sliders: live visual update ONLY (no render, no DOM rebuild) while dragging
