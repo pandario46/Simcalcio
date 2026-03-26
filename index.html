@@ -638,7 +638,7 @@ function DiffBadge(props){
 // STATE
 // ═══════════════════════════════════════════════════
  
-var state={tab:'runin',sim:{},ran:false,home:'INT',away:'NAP',match:null,evs:[],score:{h:0,a:0},playing:false,fin:false,hist:[],mc:null,mcr:false,predHome:'COM',predAway:'PIS',simSet:{homeRotation:0,awayRotation:0,homeFormation:'default',awayFormation:'default',homeMorale:50,awayMorale:50},pred:{h:'',a:'',locked:false,coins:0,streak:0,correct:0,attempts:0,lastMsg:'',lastReward:0,lastPH:'',lastPA:''}};
+var state={tab:'title',sim:{},ran:false,home:'INT',away:'NAP',match:null,evs:[],score:{h:0,a:0},playing:false,fin:false,hist:[],mc:null,mcr:false,predHome:'COM',predAway:'PIS',simSet:{homeRotation:0,awayRotation:0,homeFormation:'default',awayFormation:'default',homeMorale:50,awayMorale:50},pred:{h:'',a:'',locked:false,coins:0,streak:0,correct:0,attempts:0,lastMsg:'',lastReward:0,lastPH:'',lastPA:''}};
 var playInterval=null;
 function setState(patch){Object.assign(state,patch);render();}
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
@@ -1189,7 +1189,494 @@ function renderMonte(){
     +methodNote
     +'<div style="font-size:0.56rem;color:#333;margin-top:10px;text-align:center">'+mc.ties+' tiebreak scenarios in '+mc.n+' sims \u2022 DC v2 \u03C1-corrected + mismatch-calibrated</div></div>';
 }
+ // ═══════════════════════════════════════════════════
+// TITLE RACE TAB (Run-In + Monte Carlo combined)
+// ═══════════════════════════════════════════════════
  
+function renderTitleRace(){
+  var runInHtml = renderRunIn();
+  var monteHtml = renderMonte();
+ 
+  return '<div>' +
+    '<div style="font-family:Georgia,serif;font-size:1.25rem;font-weight:700;margin-bottom:3px">Title Race</div>' +
+    '<div style="font-size:0.65rem;color:#555;margin-bottom:16px">Run-In Simulator + 10,000 AI Scenarios</div>' +
+ 
+    // Toggle buttons
+    '<div style="display:flex;gap:0;margin-bottom:16px;border:1px solid #181e28;border-radius:3px;overflow:hidden">' +
+    '<button class="B" data-action="titleView-runin" style="flex:1;border-radius:0;font-size:0.7rem;padding:10px 16px;' +
+    (state.titleView !== 'monte' ? 'background:linear-gradient(135deg,#c9a84c,#e8c970);color:#07090d' : 'background:#0c1018;color:#555;font-weight:400') +
+    '">\uD83C\uDFC1 Run-In</button>' +
+    '<button class="B" data-action="titleView-monte" style="flex:1;border-radius:0;font-size:0.7rem;padding:10px 16px;' +
+    (state.titleView === 'monte' ? 'background:linear-gradient(135deg,#c9a84c,#e8c970);color:#07090d' : 'background:#0c1018;color:#555;font-weight:400') +
+    '">\uD83C\uDFB2 10,000 Scenarios</button>' +
+    '</div>' +
+ 
+    // Content based on view
+    (state.titleView === 'monte' ? monteHtml : runInHtml) +
+ 
+    '</div>';
+}
+
+// ═══════════════════════════════════════════════════
+// PREDICT TAB (Predicted Score + Stats + Tactics)
+// ═══════════════════════════════════════════════════
+ 
+function renderPredict(){
+  var ha=state.predHome,aa=state.predAway;
+  var hT=TEAMS.find(function(t){return t.abbr===ha;});
+  var aT=TEAMS.find(function(t){return t.abbr===aa;});
+ 
+  // Team selectors
+  var selectors='<div style="display:grid;grid-template-columns:1fr 40px 1fr;gap:8px;align-items:end;margin-bottom:16px">'
+    +'<div><div style="font-size:0.54rem;color:#555;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px">Home</div>'+buildPredSelect('ph',ha)+'</div>'
+    +'<div style="text-align:center;font-size:0.7rem;color:#555;padding-bottom:10px">vs</div>'
+    +'<div><div style="font-size:0.54rem;color:#555;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px">Away</div>'+buildPredSelect('pa',aa)+'</div></div>';
+ 
+  if(ha===aa)return'<div><div style="font-family:Georgia,serif;font-size:1.25rem;font-weight:700;margin-bottom:16px">Predict & Analyse</div>'+selectors+'<div style="text-align:center;padding:40px;color:#555">Select two different teams</div></div>';
+ 
+  // Sub-view toggle
+  var viewToggle = '<div style="display:flex;gap:0;margin-bottom:16px;border:1px solid #181e28;border-radius:3px;overflow:hidden">' +
+    '<button class="B" data-action="predView-score" style="flex:1;border-radius:0;font-size:0.65rem;padding:8px 12px;' +
+    (!state.predView || state.predView === 'score' ? 'background:linear-gradient(135deg,#c9a84c,#e8c970);color:#07090d' : 'background:#0c1018;color:#555;font-weight:400') +
+    '">\uD83C\uDFAF Predicted Score</button>' +
+    '<button class="B" data-action="predView-stats" style="flex:1;border-radius:0;font-size:0.65rem;padding:8px 12px;' +
+    (state.predView === 'stats' ? 'background:linear-gradient(135deg,#c9a84c,#e8c970);color:#07090d' : 'background:#0c1018;color:#555;font-weight:400') +
+    '">\uD83D\uDCCA Team Stats</button>' +
+    '<button class="B" data-action="predView-tactics" style="flex:1;border-radius:0;font-size:0.65rem;padding:8px 12px;' +
+    (state.predView === 'tactics' ? 'background:linear-gradient(135deg,#c9a84c,#e8c970);color:#07090d' : 'background:#0c1018;color:#555;font-weight:400') +
+    '">\u2694\uFE0F Tactics</button>' +
+    '</div>';
+ 
+  var content = '';
+  if (state.predView === 'stats') {
+    content = renderTeamStats(ha, aa, hT, aT);
+  } else if (state.predView === 'tactics') {
+    content = renderTeamTactics(ha, aa, hT, aT);
+  } else {
+    content = renderPredictedCore(ha, aa, hT, aT);
+  }
+ 
+  return '<div>' +
+    '<div style="font-family:Georgia,serif;font-size:1.25rem;font-weight:700;margin-bottom:3px">Predict & Analyse</div>' +
+    '<div style="font-size:0.65rem;color:#555;margin-bottom:16px">LLM \u2022 Select two teams to compare</div>' +
+    selectors + viewToggle + content + '</div>';
+}
+ 
+// Stats for selected teams
+function renderTeamStats(ha, aa, hT, aT) {
+  var hS = STATS20.find(function(s){return s.abbr===ha;}) || {};
+  var aS = STATS20.find(function(s){return s.abbr===aa;}) || {};
+ 
+  function statBar(label, hVal, aVal, loIsBetter) {
+    var max = Math.max(hVal, aVal, 0.01);
+    var hPct = (hVal / max * 100).toFixed(0);
+    var aPct = (aVal / max * 100).toFixed(0);
+    var hBetter = loIsBetter ? hVal < aVal : hVal > aVal;
+    var aBetter = !hBetter && hVal !== aVal;
+    var hCol = hBetter ? '#00e676' : '#ff6d00';
+    var aCol = aBetter ? '#00e676' : '#ff6d00';
+    if (hVal === aVal) { hCol = '#ffd740'; aCol = '#ffd740'; }
+ 
+    return '<div style="margin-bottom:12px">' +
+      '<div style="font-size:0.54rem;color:#555;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;text-align:center">' + label + '</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 50px 1fr;gap:8px;align-items:center">' +
+      '<div style="text-align:right"><div style="font-family:Georgia,serif;font-size:1.1rem;font-weight:700;color:' + hCol + '">' + hVal + '</div>' +
+      '<div style="height:4px;background:#1a1e24;border-radius:2px;margin-top:3px"><div style="width:' + hPct + '%;height:100%;background:' + hT.color + ';border-radius:2px;margin-left:auto"></div></div></div>' +
+      '<div style="text-align:center;font-size:0.48rem;color:#444">' + label + '</div>' +
+      '<div><div style="font-family:Georgia,serif;font-size:1.1rem;font-weight:700;color:' + aCol + '">' + aVal + '</div>' +
+      '<div style="height:4px;background:#1a1e24;border-radius:2px;margin-top:3px"><div style="width:' + aPct + '%;height:100%;background:' + aT.color + ';border-radius:2px"></div></div></div>' +
+      '</div></div>';
+  }
+ 
+  // Team headers
+  var header = '<div style="display:grid;grid-template-columns:1fr 50px 1fr;gap:8px;margin-bottom:16px;text-align:center">' +
+    '<div style="font-size:0.75rem;font-weight:600;color:' + hT.color + '">' + esc(hT.name) + '</div>' +
+    '<div style="font-size:0.6rem;color:#555">vs</div>' +
+    '<div style="font-size:0.75rem;font-weight:600;color:' + aT.color + '">' + esc(aT.name) + '</div></div>';
+ 
+  return '<div style="background:#0c1018;border:1px solid #181e28;padding:16px;border-radius:4px">' +
+    '<div style="font-size:0.56rem;color:#c9a84c;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:12px">Head-to-Head Comparison</div>' +
+    header +
+    statBar('xG / Game', hS.xg || 0, aS.xg || 0, false) +
+    statBar('xGA / Game', hS.xga || 0, aS.xga || 0, true) +
+    statBar('PPDA', hS.ppda || 0, aS.ppda || 0, true) +
+    statBar('Shots / Game', hS.shots || 0, aS.shots || 0, false) +
+    statBar('Possession %', hS.poss || 0, aS.poss || 0, false) +
+    statBar('Tackles / Game', hS.tkl || 0, aS.tkl || 0, false) +
+    statBar('Turnovers / Game', hS.trn || 0, aS.trn || 0, true) +
+    statBar('Fouls / Game', hS.fouls || 0, aS.fouls || 0, true) +
+ 
+    // Block style badges
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px">' +
+    [{ s: hS, t: hT }, { s: aS, t: aT }].map(function(x) {
+      var blockCol = (x.s.block||'').indexOf('High') >= 0 ? '#ff1744' : (x.s.block||'').indexOf('Low') >= 0 ? '#4fc3f7' : '#ffd740';
+      return '<div style="text-align:center;padding:10px;background:#0a0e14;border:1px solid #151b25;border-radius:3px">' +
+        '<div style="font-size:0.55rem;color:' + x.t.color + ';margin-bottom:4px">' + esc(x.t.name) + '</div>' +
+        '<span style="display:inline-block;padding:3px 8px;font-size:0.55rem;font-weight:700;background:' + blockCol + '22;color:' + blockCol + ';border:1px solid ' + blockCol + '44;border-radius:2px">' + (x.s.block || 'Unknown') + '</span></div>';
+    }).join('') + '</div></div>';
+}
+ 
+// Tactics for selected teams
+function renderTeamTactics(ha, aa, hT, aT) {
+  var hTD = TDATA[ha] || { bk:'medium', block:'Unknown', ppda:10 };
+  var aTD = TDATA[aa] || { bk:'medium', block:'Unknown', ppda:10 };
+  var mu = BLOCK_MU[hTD.bk + '_vs_' + aTD.bk] || { gm: 1.0, label: 'Balanced game' };
+  var muReverse = BLOCK_MU[aTD.bk + '_vs_' + hTD.bk] || { gm: 1.0, label: 'Balanced game' };
+ 
+  var dc = dcAnalyse(ha, aa);
+ 
+  return '<div style="background:#0c1018;border:1px solid #181e28;padding:16px;border-radius:4px">' +
+    '<div style="font-size:0.56rem;color:#c9a84c;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:12px">Tactical Matchup</div>' +
+ 
+    // Main matchup card
+    '<div style="background:#0a0e14;border:1px solid #151b25;padding:14px;margin-bottom:12px;border-radius:3px;text-align:center">' +
+    '<div style="display:flex;justify-content:center;align-items:center;gap:16px;margin-bottom:10px">' +
+    '<div><div style="font-size:0.55rem;color:' + hT.color + '">' + esc(hT.name) + '</div>' +
+    '<div style="font-size:0.9rem;font-weight:700;color:' + hT.color + '">' + hTD.block + '</div>' +
+    '<div style="font-size:0.65rem;color:#888">PPDA ' + hTD.ppda + '</div></div>' +
+    '<div style="font-size:1.2rem;color:#333">vs</div>' +
+    '<div><div style="font-size:0.55rem;color:' + aT.color + '">' + esc(aT.name) + '</div>' +
+    '<div style="font-size:0.9rem;font-weight:700;color:' + aT.color + '">' + aTD.block + '</div>' +
+    '<div style="font-size:0.65rem;color:#888">PPDA ' + aTD.ppda + '</div></div></div>' +
+ 
+    '<div style="font-size:0.72rem;color:' + (mu.gm > 1.05 ? '#00e676' : mu.gm < 0.95 ? '#ff1744' : '#ffd740') + ';font-weight:600;margin-bottom:4px">' + mu.label + '</div>' +
+    '<div style="font-size:0.55rem;color:#555">Goal multiplier: x' + mu.gm + '</div></div>' +
+ 
+    // Lambda info
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">' +
+    '<div style="background:#0a0e14;border:1px solid #151b25;padding:10px;text-align:center;border-radius:3px">' +
+    '<div style="font-size:0.5rem;color:#555;margin-bottom:3px">\u03BB HOME (expected goals)</div>' +
+    '<div style="font-family:Georgia,serif;font-size:1.4rem;font-weight:900;color:' + hT.color + '">' + dc.hL.toFixed(2) + '</div></div>' +
+    '<div style="background:#0a0e14;border:1px solid #151b25;padding:10px;text-align:center;border-radius:3px">' +
+    '<div style="font-size:0.5rem;color:#555;margin-bottom:3px">\u03BB AWAY (expected goals)</div>' +
+    '<div style="font-family:Georgia,serif;font-size:1.4rem;font-weight:900;color:' + aT.color + '">' + dc.aL.toFixed(2) + '</div></div></div>' +
+ 
+    // Reverse matchup
+    '<div style="background:#0a0e14;border:1px solid #151b25;padding:10px;border-radius:3px;text-align:center">' +
+    '<div style="font-size:0.5rem;color:#555;margin-bottom:4px">Reverse perspective (' + esc(aT.name) + ' attacking)</div>' +
+    '<div style="font-size:0.65rem;color:' + (muReverse.gm > 1.05 ? '#00e676' : muReverse.gm < 0.95 ? '#ff1744' : '#ffd740') + '">' + muReverse.label + '</div>' +
+    '<div style="font-size:0.5rem;color:#555">x' + muReverse.gm + '</div></div>' +
+ 
+    // Strength info
+    '<div style="margin-top:12px;font-size:0.55rem;color:#444;text-align:center">' +
+    'Str: ' + esc(hT.name) + ' ' + (ADV[ha] ? ADV[ha].str : OPP[ha] || 50) + ' vs ' + esc(aT.name) + ' ' + (ADV[aa] ? ADV[aa].str : OPP[aa] || 50) +
+    ' \u2022 Gap: ' + Math.abs((ADV[ha] ? ADV[ha].str : OPP[ha] || 50) - (ADV[aa] ? ADV[aa].str : OPP[aa] || 50)).toFixed(0) +
+    ' \u2022 \u03C1=' + dc.rho.toFixed(3) + '</div>' +
+ 
+    '</div>';
+}
+ 
+// Core predicted score (extracted from renderPredicted)
+function renderPredictedCore(ha, aa, hT, aT) {
+  var dc=dcAnalyse(ha,aa);var o=dc.outcomes;var top=dc.topScores;var mx=dc.matrix;
+  var maxP=0;for(var i=0;i<=7;i++)for(var j=0;j<=7;j++)if(mx[i][j]>maxP)maxP=mx[i][j];
+ 
+  var outcomeCards=[['Home Win',o.homeWin,hT.color,hT.name],['Draw',o.draw,'#ffd740','Draw'],['Away Win',o.awayWin,aT.color,aT.name]].map(function(x){
+    var pct=(x[1]*100).toFixed(1);
+    return'<div style="background:#0c1018;border:1px solid #181e28;padding:14px;text-align:center;border-top:3px solid '+x[2]+'">'
+      +'<div style="font-size:0.54rem;color:#555;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px">'+x[0]+'</div>'
+      +'<div style="font-family:Georgia,serif;font-size:2rem;font-weight:900;color:'+x[2]+'">'+pct+'%</div>'
+      +'<div style="height:4px;background:#1a1e24;border-radius:2px;margin-top:6px"><div style="width:'+pct+'%;height:100%;background:'+x[2]+';border-radius:2px"></div></div></div>';
+  }).join('');
+ 
+  var topCards=top.slice(0,8).map(function(s,idx){
+    var pct=(s.p*100).toFixed(1);var outcomeColor=s.h>s.a?hT.color:s.h===s.a?'#ffd740':aT.color;var isTop=idx===0;
+    return'<div style="background:#0c1018;border:1px solid '+(isTop?'#c9a84c44':'#181e28')+';padding:12px;text-align:center;position:relative'+(isTop?';border-top:2px solid #c9a84c':'')+'">'
+      +(isTop?'<div style="position:absolute;top:4px;right:6px;font-size:0.5rem;color:#c9a84c;letter-spacing:0.1em">MOST LIKELY</div>':'')
+      +'<div style="font-family:Georgia,serif;font-size:'+(isTop?'2.2rem':'1.6rem')+';font-weight:900;color:'+(isTop?'#c9a84c':'#e0d8cc')+'">'+s.h+' - '+s.a+'</div>'
+      +'<div style="font-size:0.72rem;color:#888;font-weight:600;margin-top:4px">'+pct+'%</div>'
+      +'<div style="height:3px;background:#1a1e24;border-radius:2px;margin-top:6px"><div style="width:'+Math.min(parseFloat(pct)/maxP/100*100*100,100).toFixed(0)+'%;height:100%;background:'+(isTop?'#c9a84c':outcomeColor)+';border-radius:2px"></div></div></div>';
+  }).join('');
+ 
+  var heatHeader='<div style="display:grid;grid-template-columns:36px repeat(7,1fr);gap:2px;margin-bottom:2px"><div></div>';
+  for(var c=0;c<=6;c++)heatHeader+='<div style="text-align:center;font-size:0.58rem;color:'+aT.color+';font-weight:600">'+c+'</div>';
+  heatHeader+='</div>';
+  var heatRows='';
+  for(var hr=0;hr<=6;hr++){
+    heatRows+='<div style="display:grid;grid-template-columns:36px repeat(7,1fr);gap:2px;margin-bottom:2px">';
+    heatRows+='<div style="display:flex;align-items:center;justify-content:center;font-size:0.58rem;color:'+hT.color+';font-weight:600">'+hr+'</div>';
+    for(var hc=0;hc<=6;hc++){
+      var prob=mx[hr][hc];var pctVal=(prob*100).toFixed(1);var bg=heatColor(prob,maxP);
+      var textColor=prob/maxP>0.5?'#07090d':(prob>0.005?'#e0d8cc':'#333');
+      heatRows+='<div class="heatcell" style="background:'+bg+';color:'+textColor+'" title="'+hr+'-'+hc+': '+pctVal+'%">'+pctVal+'</div>';
+    }
+    heatRows+='</div>';
+  }
+ 
+  var homeGoalDist=[],awayGoalDist=[];
+  for(var g=0;g<=6;g++){var hProb=0,aProb=0;for(var g2=0;g2<=8;g2++){if(g<=8)hProb+=mx[g][g2]||0;if(g<=8)aProb+=mx[g2]?mx[g2][g]||0:0;}homeGoalDist.push({goals:g,p:hProb});awayGoalDist.push({goals:g,p:aProb});}
+  var goalBars=function(dist,color,name){
+    var maxG=Math.max.apply(null,dist.map(function(d){return d.p;}));
+    return'<div style="margin-bottom:12px"><div style="font-size:0.58rem;color:'+color+';font-weight:600;margin-bottom:6px">'+name+' Goal Distribution</div>'
+      +dist.map(function(d){var w=maxG>0?(d.p/maxG*100):0;
+        return'<div style="display:flex;align-items:center;gap:8px;margin-bottom:3px"><div style="width:16px;font-size:0.65rem;color:#888;text-align:center">'+d.goals+'</div><div style="flex:1;height:6px;background:#1a1e24;border-radius:3px"><div style="width:'+w.toFixed(1)+'%;height:100%;background:'+color+';border-radius:3px"></div></div><div style="width:40px;font-size:0.62rem;color:#888;text-align:right">'+(d.p*100).toFixed(1)+'%</div></div>';
+      }).join('')+'</div>';
+  };
+ 
+  var bttsYes=0,bttsNo=0,over25=0,under25=0,over15=0,under15=0,over35=0,under35=0;
+  for(var bh=0;bh<=8;bh++)for(var ba=0;ba<=8;ba++){var p2=mx[bh]?mx[bh][ba]||0:0;if(bh>0&&ba>0)bttsYes+=p2;else bttsNo+=p2;if(bh+ba>2)over25+=p2;else under25+=p2;if(bh+ba>1)over15+=p2;else under15+=p2;if(bh+ba>3)over35+=p2;else under35+=p2;}
+  var marketCards=[
+    {label:'BTTS Yes',val:bttsYes,col:'#69f0ae'},{label:'BTTS No',val:bttsNo,col:'#ff6d00'},
+    {label:'Over 1.5',val:over15,col:'#69f0ae'},{label:'Under 1.5',val:under15,col:'#ff6d00'},
+    {label:'Over 2.5',val:over25,col:'#69f0ae'},{label:'Under 2.5',val:under25,col:'#ff6d00'},
+    {label:'Over 3.5',val:over35,col:'#69f0ae'},{label:'Under 3.5',val:under35,col:'#ff6d00'},
+  ].map(function(m){var pct=(m.val*100).toFixed(1);
+    return'<div style="background:#0c1018;border:1px solid #181e28;padding:10px;text-align:center"><div style="font-size:0.52rem;color:#555;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px">'+m.label+'</div><div style="font-family:Georgia,serif;font-size:1.2rem;font-weight:700;color:'+m.col+'">'+pct+'%</div></div>';
+  }).join('');
+ 
+  var expTotal=(dc.hL+dc.aL).toFixed(2);
+ 
+  return '<div style="background:linear-gradient(135deg,#0e1520,#0c1018);border:1px solid #c9a84c33;padding:16px;margin-bottom:14px;text-align:center">'
+    +'<div style="font-size:0.54rem;color:#555;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:4px">Expected Goals</div>'
+    +'<div style="display:flex;justify-content:center;align-items:center;gap:20px">'
+    +'<div><div style="font-size:0.6rem;color:'+hT.color+'">'+esc(hT.name)+'</div><div style="font-family:Georgia,serif;font-size:1.8rem;font-weight:900;color:'+hT.color+'">'+dc.hL.toFixed(2)+'</div></div>'
+    +'<div style="font-size:0.7rem;color:#333">|</div>'
+    +'<div><div style="font-size:0.6rem;color:#888">Total</div><div style="font-family:Georgia,serif;font-size:1.8rem;font-weight:900;color:#c9a84c">'+expTotal+'</div></div>'
+    +'<div style="font-size:0.7rem;color:#333">|</div>'
+    +'<div><div style="font-size:0.6rem;color:'+aT.color+'">'+esc(aT.name)+'</div><div style="font-family:Georgia,serif;font-size:1.8rem;font-weight:900;color:'+aT.color+'">'+dc.aL.toFixed(2)+'</div></div></div></div>'
+    +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px">'+outcomeCards+'</div>'
+    +'<div style="font-size:0.56rem;color:#c9a84c;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:8px">Most Likely Scorelines</div>'
+    +'<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px">'+topCards+'</div>'
+    +'<div style="background:#0c1018;border:1px solid #181e28;padding:14px;margin-bottom:14px">'
+    +'<div style="font-size:0.56rem;color:#c9a84c;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:4px">Scoreline Probability Matrix</div>'
+    +'<div style="font-size:0.52rem;color:#555;margin-bottom:10px"><span style="color:'+hT.color+'">\u2193 '+esc(hT.name)+' goals</span> \u00A0\u00A0 <span style="color:'+aT.color+'">\u2192 '+esc(aT.name)+' goals</span> \u00A0\u00A0 Values in %</div>'
+    +heatHeader+heatRows+'</div>'
+    +'<div style="background:#0c1018;border:1px solid #181e28;padding:14px;margin-bottom:14px">'
+    +'<div style="font-size:0.56rem;color:#c9a84c;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:10px">Goal Distributions</div>'
+    +goalBars(homeGoalDist,hT.color,hT.name)+goalBars(awayGoalDist,aT.color,aT.name)+'</div>'
+    +'<div style="font-size:0.56rem;color:#c9a84c;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:8px">Market Probabilities</div>'
+    +'<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px">'+marketCards+'</div>';
+}
+    // ═══════════════════════════════════════════════════
+// PREDICT TAB (Predicted Score + Stats + Tactics)
+// ═══════════════════════════════════════════════════
+ 
+function renderPredict(){
+  var ha=state.predHome,aa=state.predAway;
+  var hT=TEAMS.find(function(t){return t.abbr===ha;});
+  var aT=TEAMS.find(function(t){return t.abbr===aa;});
+ 
+  // Team selectors
+  var selectors='<div style="display:grid;grid-template-columns:1fr 40px 1fr;gap:8px;align-items:end;margin-bottom:16px">'
+    +'<div><div style="font-size:0.54rem;color:#555;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px">Home</div>'+buildPredSelect('ph',ha)+'</div>'
+    +'<div style="text-align:center;font-size:0.7rem;color:#555;padding-bottom:10px">vs</div>'
+    +'<div><div style="font-size:0.54rem;color:#555;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px">Away</div>'+buildPredSelect('pa',aa)+'</div></div>';
+ 
+  if(ha===aa)return'<div><div style="font-family:Georgia,serif;font-size:1.25rem;font-weight:700;margin-bottom:16px">Predict & Analyse</div>'+selectors+'<div style="text-align:center;padding:40px;color:#555">Select two different teams</div></div>';
+ 
+  // Sub-view toggle
+  var viewToggle = '<div style="display:flex;gap:0;margin-bottom:16px;border:1px solid #181e28;border-radius:3px;overflow:hidden">' +
+    '<button class="B" data-action="predView-score" style="flex:1;border-radius:0;font-size:0.65rem;padding:8px 12px;' +
+    (!state.predView || state.predView === 'score' ? 'background:linear-gradient(135deg,#c9a84c,#e8c970);color:#07090d' : 'background:#0c1018;color:#555;font-weight:400') +
+    '">\uD83C\uDFAF Predicted Score</button>' +
+    '<button class="B" data-action="predView-stats" style="flex:1;border-radius:0;font-size:0.65rem;padding:8px 12px;' +
+    (state.predView === 'stats' ? 'background:linear-gradient(135deg,#c9a84c,#e8c970);color:#07090d' : 'background:#0c1018;color:#555;font-weight:400') +
+    '">\uD83D\uDCCA Team Stats</button>' +
+    '<button class="B" data-action="predView-tactics" style="flex:1;border-radius:0;font-size:0.65rem;padding:8px 12px;' +
+    (state.predView === 'tactics' ? 'background:linear-gradient(135deg,#c9a84c,#e8c970);color:#07090d' : 'background:#0c1018;color:#555;font-weight:400') +
+    '">\u2694\uFE0F Tactics</button>' +
+    '</div>';
+ 
+  var content = '';
+  if (state.predView === 'stats') {
+    content = renderTeamStats(ha, aa, hT, aT);
+  } else if (state.predView === 'tactics') {
+    content = renderTeamTactics(ha, aa, hT, aT);
+  } else {
+    content = renderPredictedCore(ha, aa, hT, aT);
+  }
+ 
+  return '<div>' +
+    '<div style="font-family:Georgia,serif;font-size:1.25rem;font-weight:700;margin-bottom:3px">Predict & Analyse</div>' +
+    '<div style="font-size:0.65rem;color:#555;margin-bottom:16px">LLM \u2022 Select two teams to compare</div>' +
+    selectors + viewToggle + content + '</div>';
+}
+ 
+// Stats for selected teams
+function renderTeamStats(ha, aa, hT, aT) {
+  var hS = STATS20.find(function(s){return s.abbr===ha;}) || {};
+  var aS = STATS20.find(function(s){return s.abbr===aa;}) || {};
+ 
+  function statBar(label, hVal, aVal, loIsBetter) {
+    var max = Math.max(hVal, aVal, 0.01);
+    var hPct = (hVal / max * 100).toFixed(0);
+    var aPct = (aVal / max * 100).toFixed(0);
+    var hBetter = loIsBetter ? hVal < aVal : hVal > aVal;
+    var aBetter = !hBetter && hVal !== aVal;
+    var hCol = hBetter ? '#00e676' : '#ff6d00';
+    var aCol = aBetter ? '#00e676' : '#ff6d00';
+    if (hVal === aVal) { hCol = '#ffd740'; aCol = '#ffd740'; }
+ 
+    return '<div style="margin-bottom:12px">' +
+      '<div style="font-size:0.54rem;color:#555;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;text-align:center">' + label + '</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 50px 1fr;gap:8px;align-items:center">' +
+      '<div style="text-align:right"><div style="font-family:Georgia,serif;font-size:1.1rem;font-weight:700;color:' + hCol + '">' + hVal + '</div>' +
+      '<div style="height:4px;background:#1a1e24;border-radius:2px;margin-top:3px"><div style="width:' + hPct + '%;height:100%;background:' + hT.color + ';border-radius:2px;margin-left:auto"></div></div></div>' +
+      '<div style="text-align:center;font-size:0.48rem;color:#444">' + label + '</div>' +
+      '<div><div style="font-family:Georgia,serif;font-size:1.1rem;font-weight:700;color:' + aCol + '">' + aVal + '</div>' +
+      '<div style="height:4px;background:#1a1e24;border-radius:2px;margin-top:3px"><div style="width:' + aPct + '%;height:100%;background:' + aT.color + ';border-radius:2px"></div></div></div>' +
+      '</div></div>';
+  }
+ 
+  // Team headers
+  var header = '<div style="display:grid;grid-template-columns:1fr 50px 1fr;gap:8px;margin-bottom:16px;text-align:center">' +
+    '<div style="font-size:0.75rem;font-weight:600;color:' + hT.color + '">' + esc(hT.name) + '</div>' +
+    '<div style="font-size:0.6rem;color:#555">vs</div>' +
+    '<div style="font-size:0.75rem;font-weight:600;color:' + aT.color + '">' + esc(aT.name) + '</div></div>';
+ 
+  return '<div style="background:#0c1018;border:1px solid #181e28;padding:16px;border-radius:4px">' +
+    '<div style="font-size:0.56rem;color:#c9a84c;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:12px">Head-to-Head Comparison</div>' +
+    header +
+    statBar('xG / Game', hS.xg || 0, aS.xg || 0, false) +
+    statBar('xGA / Game', hS.xga || 0, aS.xga || 0, true) +
+    statBar('PPDA', hS.ppda || 0, aS.ppda || 0, true) +
+    statBar('Shots / Game', hS.shots || 0, aS.shots || 0, false) +
+    statBar('Possession %', hS.poss || 0, aS.poss || 0, false) +
+    statBar('Tackles / Game', hS.tkl || 0, aS.tkl || 0, false) +
+    statBar('Turnovers / Game', hS.trn || 0, aS.trn || 0, true) +
+    statBar('Fouls / Game', hS.fouls || 0, aS.fouls || 0, true) +
+ 
+    // Block style badges
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px">' +
+    [{ s: hS, t: hT }, { s: aS, t: aT }].map(function(x) {
+      var blockCol = (x.s.block||'').indexOf('High') >= 0 ? '#ff1744' : (x.s.block||'').indexOf('Low') >= 0 ? '#4fc3f7' : '#ffd740';
+      return '<div style="text-align:center;padding:10px;background:#0a0e14;border:1px solid #151b25;border-radius:3px">' +
+        '<div style="font-size:0.55rem;color:' + x.t.color + ';margin-bottom:4px">' + esc(x.t.name) + '</div>' +
+        '<span style="display:inline-block;padding:3px 8px;font-size:0.55rem;font-weight:700;background:' + blockCol + '22;color:' + blockCol + ';border:1px solid ' + blockCol + '44;border-radius:2px">' + (x.s.block || 'Unknown') + '</span></div>';
+    }).join('') + '</div></div>';
+}
+ 
+// Tactics for selected teams
+function renderTeamTactics(ha, aa, hT, aT) {
+  var hTD = TDATA[ha] || { bk:'medium', block:'Unknown', ppda:10 };
+  var aTD = TDATA[aa] || { bk:'medium', block:'Unknown', ppda:10 };
+  var mu = BLOCK_MU[hTD.bk + '_vs_' + aTD.bk] || { gm: 1.0, label: 'Balanced game' };
+  var muReverse = BLOCK_MU[aTD.bk + '_vs_' + hTD.bk] || { gm: 1.0, label: 'Balanced game' };
+ 
+  var dc = dcAnalyse(ha, aa);
+ 
+  return '<div style="background:#0c1018;border:1px solid #181e28;padding:16px;border-radius:4px">' +
+    '<div style="font-size:0.56rem;color:#c9a84c;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:12px">Tactical Matchup</div>' +
+ 
+    // Main matchup card
+    '<div style="background:#0a0e14;border:1px solid #151b25;padding:14px;margin-bottom:12px;border-radius:3px;text-align:center">' +
+    '<div style="display:flex;justify-content:center;align-items:center;gap:16px;margin-bottom:10px">' +
+    '<div><div style="font-size:0.55rem;color:' + hT.color + '">' + esc(hT.name) + '</div>' +
+    '<div style="font-size:0.9rem;font-weight:700;color:' + hT.color + '">' + hTD.block + '</div>' +
+    '<div style="font-size:0.65rem;color:#888">PPDA ' + hTD.ppda + '</div></div>' +
+    '<div style="font-size:1.2rem;color:#333">vs</div>' +
+    '<div><div style="font-size:0.55rem;color:' + aT.color + '">' + esc(aT.name) + '</div>' +
+    '<div style="font-size:0.9rem;font-weight:700;color:' + aT.color + '">' + aTD.block + '</div>' +
+    '<div style="font-size:0.65rem;color:#888">PPDA ' + aTD.ppda + '</div></div></div>' +
+ 
+    '<div style="font-size:0.72rem;color:' + (mu.gm > 1.05 ? '#00e676' : mu.gm < 0.95 ? '#ff1744' : '#ffd740') + ';font-weight:600;margin-bottom:4px">' + mu.label + '</div>' +
+    '<div style="font-size:0.55rem;color:#555">Goal multiplier: x' + mu.gm + '</div></div>' +
+ 
+    // Lambda info
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">' +
+    '<div style="background:#0a0e14;border:1px solid #151b25;padding:10px;text-align:center;border-radius:3px">' +
+    '<div style="font-size:0.5rem;color:#555;margin-bottom:3px">\u03BB HOME (expected goals)</div>' +
+    '<div style="font-family:Georgia,serif;font-size:1.4rem;font-weight:900;color:' + hT.color + '">' + dc.hL.toFixed(2) + '</div></div>' +
+    '<div style="background:#0a0e14;border:1px solid #151b25;padding:10px;text-align:center;border-radius:3px">' +
+    '<div style="font-size:0.5rem;color:#555;margin-bottom:3px">\u03BB AWAY (expected goals)</div>' +
+    '<div style="font-family:Georgia,serif;font-size:1.4rem;font-weight:900;color:' + aT.color + '">' + dc.aL.toFixed(2) + '</div></div></div>' +
+ 
+    // Reverse matchup
+    '<div style="background:#0a0e14;border:1px solid #151b25;padding:10px;border-radius:3px;text-align:center">' +
+    '<div style="font-size:0.5rem;color:#555;margin-bottom:4px">Reverse perspective (' + esc(aT.name) + ' attacking)</div>' +
+    '<div style="font-size:0.65rem;color:' + (muReverse.gm > 1.05 ? '#00e676' : muReverse.gm < 0.95 ? '#ff1744' : '#ffd740') + '">' + muReverse.label + '</div>' +
+    '<div style="font-size:0.5rem;color:#555">x' + muReverse.gm + '</div></div>' +
+ 
+    // Strength info
+    '<div style="margin-top:12px;font-size:0.55rem;color:#444;text-align:center">' +
+    'Str: ' + esc(hT.name) + ' ' + (ADV[ha] ? ADV[ha].str : OPP[ha] || 50) + ' vs ' + esc(aT.name) + ' ' + (ADV[aa] ? ADV[aa].str : OPP[aa] || 50) +
+    ' \u2022 Gap: ' + Math.abs((ADV[ha] ? ADV[ha].str : OPP[ha] || 50) - (ADV[aa] ? ADV[aa].str : OPP[aa] || 50)).toFixed(0) +
+    ' \u2022 \u03C1=' + dc.rho.toFixed(3) + '</div>' +
+ 
+    '</div>';
+}
+ 
+// Core predicted score (extracted from renderPredicted)
+function renderPredictedCore(ha, aa, hT, aT) {
+  var dc=dcAnalyse(ha,aa);var o=dc.outcomes;var top=dc.topScores;var mx=dc.matrix;
+  var maxP=0;for(var i=0;i<=7;i++)for(var j=0;j<=7;j++)if(mx[i][j]>maxP)maxP=mx[i][j];
+ 
+  var outcomeCards=[['Home Win',o.homeWin,hT.color,hT.name],['Draw',o.draw,'#ffd740','Draw'],['Away Win',o.awayWin,aT.color,aT.name]].map(function(x){
+    var pct=(x[1]*100).toFixed(1);
+    return'<div style="background:#0c1018;border:1px solid #181e28;padding:14px;text-align:center;border-top:3px solid '+x[2]+'">'
+      +'<div style="font-size:0.54rem;color:#555;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px">'+x[0]+'</div>'
+      +'<div style="font-family:Georgia,serif;font-size:2rem;font-weight:900;color:'+x[2]+'">'+pct+'%</div>'
+      +'<div style="height:4px;background:#1a1e24;border-radius:2px;margin-top:6px"><div style="width:'+pct+'%;height:100%;background:'+x[2]+';border-radius:2px"></div></div></div>';
+  }).join('');
+ 
+  var topCards=top.slice(0,8).map(function(s,idx){
+    var pct=(s.p*100).toFixed(1);var outcomeColor=s.h>s.a?hT.color:s.h===s.a?'#ffd740':aT.color;var isTop=idx===0;
+    return'<div style="background:#0c1018;border:1px solid '+(isTop?'#c9a84c44':'#181e28')+';padding:12px;text-align:center;position:relative'+(isTop?';border-top:2px solid #c9a84c':'')+'">'
+      +(isTop?'<div style="position:absolute;top:4px;right:6px;font-size:0.5rem;color:#c9a84c;letter-spacing:0.1em">MOST LIKELY</div>':'')
+      +'<div style="font-family:Georgia,serif;font-size:'+(isTop?'2.2rem':'1.6rem')+';font-weight:900;color:'+(isTop?'#c9a84c':'#e0d8cc')+'">'+s.h+' - '+s.a+'</div>'
+      +'<div style="font-size:0.72rem;color:#888;font-weight:600;margin-top:4px">'+pct+'%</div>'
+      +'<div style="height:3px;background:#1a1e24;border-radius:2px;margin-top:6px"><div style="width:'+Math.min(parseFloat(pct)/maxP/100*100*100,100).toFixed(0)+'%;height:100%;background:'+(isTop?'#c9a84c':outcomeColor)+';border-radius:2px"></div></div></div>';
+  }).join('');
+ 
+  var heatHeader='<div style="display:grid;grid-template-columns:36px repeat(7,1fr);gap:2px;margin-bottom:2px"><div></div>';
+  for(var c=0;c<=6;c++)heatHeader+='<div style="text-align:center;font-size:0.58rem;color:'+aT.color+';font-weight:600">'+c+'</div>';
+  heatHeader+='</div>';
+  var heatRows='';
+  for(var hr=0;hr<=6;hr++){
+    heatRows+='<div style="display:grid;grid-template-columns:36px repeat(7,1fr);gap:2px;margin-bottom:2px">';
+    heatRows+='<div style="display:flex;align-items:center;justify-content:center;font-size:0.58rem;color:'+hT.color+';font-weight:600">'+hr+'</div>';
+    for(var hc=0;hc<=6;hc++){
+      var prob=mx[hr][hc];var pctVal=(prob*100).toFixed(1);var bg=heatColor(prob,maxP);
+      var textColor=prob/maxP>0.5?'#07090d':(prob>0.005?'#e0d8cc':'#333');
+      heatRows+='<div class="heatcell" style="background:'+bg+';color:'+textColor+'" title="'+hr+'-'+hc+': '+pctVal+'%">'+pctVal+'</div>';
+    }
+    heatRows+='</div>';
+  }
+ 
+  var homeGoalDist=[],awayGoalDist=[];
+  for(var g=0;g<=6;g++){var hProb=0,aProb=0;for(var g2=0;g2<=8;g2++){if(g<=8)hProb+=mx[g][g2]||0;if(g<=8)aProb+=mx[g2]?mx[g2][g]||0:0;}homeGoalDist.push({goals:g,p:hProb});awayGoalDist.push({goals:g,p:aProb});}
+  var goalBars=function(dist,color,name){
+    var maxG=Math.max.apply(null,dist.map(function(d){return d.p;}));
+    return'<div style="margin-bottom:12px"><div style="font-size:0.58rem;color:'+color+';font-weight:600;margin-bottom:6px">'+name+' Goal Distribution</div>'
+      +dist.map(function(d){var w=maxG>0?(d.p/maxG*100):0;
+        return'<div style="display:flex;align-items:center;gap:8px;margin-bottom:3px"><div style="width:16px;font-size:0.65rem;color:#888;text-align:center">'+d.goals+'</div><div style="flex:1;height:6px;background:#1a1e24;border-radius:3px"><div style="width:'+w.toFixed(1)+'%;height:100%;background:'+color+';border-radius:3px"></div></div><div style="width:40px;font-size:0.62rem;color:#888;text-align:right">'+(d.p*100).toFixed(1)+'%</div></div>';
+      }).join('')+'</div>';
+  };
+ 
+  var bttsYes=0,bttsNo=0,over25=0,under25=0,over15=0,under15=0,over35=0,under35=0;
+  for(var bh=0;bh<=8;bh++)for(var ba=0;ba<=8;ba++){var p2=mx[bh]?mx[bh][ba]||0:0;if(bh>0&&ba>0)bttsYes+=p2;else bttsNo+=p2;if(bh+ba>2)over25+=p2;else under25+=p2;if(bh+ba>1)over15+=p2;else under15+=p2;if(bh+ba>3)over35+=p2;else under35+=p2;}
+  var marketCards=[
+    {label:'BTTS Yes',val:bttsYes,col:'#69f0ae'},{label:'BTTS No',val:bttsNo,col:'#ff6d00'},
+    {label:'Over 1.5',val:over15,col:'#69f0ae'},{label:'Under 1.5',val:under15,col:'#ff6d00'},
+    {label:'Over 2.5',val:over25,col:'#69f0ae'},{label:'Under 2.5',val:under25,col:'#ff6d00'},
+    {label:'Over 3.5',val:over35,col:'#69f0ae'},{label:'Under 3.5',val:under35,col:'#ff6d00'},
+  ].map(function(m){var pct=(m.val*100).toFixed(1);
+    return'<div style="background:#0c1018;border:1px solid #181e28;padding:10px;text-align:center"><div style="font-size:0.52rem;color:#555;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px">'+m.label+'</div><div style="font-family:Georgia,serif;font-size:1.2rem;font-weight:700;color:'+m.col+'">'+pct+'%</div></div>';
+  }).join('');
+ 
+  var expTotal=(dc.hL+dc.aL).toFixed(2);
+ 
+  return '<div style="background:linear-gradient(135deg,#0e1520,#0c1018);border:1px solid #c9a84c33;padding:16px;margin-bottom:14px;text-align:center">'
+    +'<div style="font-size:0.54rem;color:#555;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:4px">Expected Goals</div>'
+    +'<div style="display:flex;justify-content:center;align-items:center;gap:20px">'
+    +'<div><div style="font-size:0.6rem;color:'+hT.color+'">'+esc(hT.name)+'</div><div style="font-family:Georgia,serif;font-size:1.8rem;font-weight:900;color:'+hT.color+'">'+dc.hL.toFixed(2)+'</div></div>'
+    +'<div style="font-size:0.7rem;color:#333">|</div>'
+    +'<div><div style="font-size:0.6rem;color:#888">Total</div><div style="font-family:Georgia,serif;font-size:1.8rem;font-weight:900;color:#c9a84c">'+expTotal+'</div></div>'
+    +'<div style="font-size:0.7rem;color:#333">|</div>'
+    +'<div><div style="font-size:0.6rem;color:'+aT.color+'">'+esc(aT.name)+'</div><div style="font-family:Georgia,serif;font-size:1.8rem;font-weight:900;color:'+aT.color+'">'+dc.aL.toFixed(2)+'</div></div></div></div>'
+    +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px">'+outcomeCards+'</div>'
+    +'<div style="font-size:0.56rem;color:#c9a84c;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:8px">Most Likely Scorelines</div>'
+    +'<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px">'+topCards+'</div>'
+    +'<div style="background:#0c1018;border:1px solid #181e28;padding:14px;margin-bottom:14px">'
+    +'<div style="font-size:0.56rem;color:#c9a84c;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:4px">Scoreline Probability Matrix</div>'
+    +'<div style="font-size:0.52rem;color:#555;margin-bottom:10px"><span style="color:'+hT.color+'">\u2193 '+esc(hT.name)+' goals</span> \u00A0\u00A0 <span style="color:'+aT.color+'">\u2192 '+esc(aT.name)+' goals</span> \u00A0\u00A0 Values in %</div>'
+    +heatHeader+heatRows+'</div>'
+    +'<div style="background:#0c1018;border:1px solid #181e28;padding:14px;margin-bottom:14px">'
+    +'<div style="font-size:0.56rem;color:#c9a84c;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:10px">Goal Distributions</div>'
+    +goalBars(homeGoalDist,hT.color,hT.name)+goalBars(awayGoalDist,aT.color,aT.name)+'</div>'
+    +'<div style="font-size:0.56rem;color:#c9a84c;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:8px">Market Probabilities</div>'
+    +'<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px">'+marketCards+'</div>';
+}
 // ═══════════════════════════════════════════════════
 // RENDER
 // ═══════════════════════════════════════════════════
@@ -1197,15 +1684,12 @@ function renderMonte(){
 function setTab(t){state.tab=t;render();}
  
 function render(){
-  var TABS=[['runin','Run-In'],['predicted','Predicted Score'],['stats','Stats'],['tactics','Tactics'],['simulator','Simulator'],['monte','10000 Scenarios']];
+  var TABS=[['title','Title Race'],['predict','Predict'],['simulate','Simulate']];
   var tabBtns=TABS.map(function(item){return'<button class="T'+(state.tab===item[0]?' on':'')+'" data-action="tab-'+item[0]+'">'+item[1]+'</button>';}).join('');
   var content='';
-  if(state.tab==='runin')content=renderRunIn();
-  else if(state.tab==='predicted')content=renderPredicted();
-  else if(state.tab==='stats')content=renderStats();
-  else if(state.tab==='tactics')content=renderTactics();
-  else if(state.tab==='simulator')content=renderSimulator();
-  else if(state.tab==='monte')content=renderMonte();
+  if(state.tab==='title')content=renderTitleRace();
+  else if(state.tab==='predict')content=renderPredict();
+  else if(state.tab==='simulate')content=renderSimulator();
  
   document.getElementById('root').innerHTML=
     '<div style="min-height:100vh;background:#07090d;color:#e0d8cc">'
@@ -1229,6 +1713,11 @@ document.addEventListener('click', function(e) {
       if (ac === 'mc') { doMC(); return; }
       if (ac === 'kickoff') { if (!el.disabled) doKickOff(); return; }
       if (ac.indexOf('tab-') === 0) { setTab(ac.slice(4)); return; }
+      if (ac === 'titleView-runin') { state.titleView = 'runin'; render(); return; }
+      if (ac === 'titleView-monte') { state.titleView = 'monte'; render(); return; }
+      if (ac === 'predView-score') { state.predView = 'score'; render(); return; }
+      if (ac === 'predView-stats') { state.predView = 'stats'; render(); return; }
+      if (ac === 'predView-tactics') { state.predView = 'tactics'; render(); return; }
       if (ac === 'lockPred') { var ph2 = document.getElementById('pred_h'), pa2 = document.getElementById('pred_a'); if (ph2 && pa2 && ph2.value !== '' && pa2.value !== '') { state.pred.h = ph2.value; state.pred.a = pa2.value; state.pred.locked = true; state.pred.lastMsg = ''; } render(); return; }
       if (ac === 'unlockPred') { state.pred.locked = false; state.pred.lastMsg = ''; render(); return; }
       if (ac === 'newMatch') { state.match = null; state.evs = []; state.score = { h: 0, a: 0 }; state.playing = false; state.fin = false; state.pred.locked = false; state.pred.h = ''; state.pred.a = ''; state.pred.lastMsg = ''; state.pred.lastReward = 0; if (playInterval) { clearInterval(playInterval); playInterval = null; } render(); return; }
