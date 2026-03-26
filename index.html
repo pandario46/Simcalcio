@@ -1043,9 +1043,15 @@ function doKickOff() {
   if (state.home === state.away || state.playing) return;
   if (playInterval) { clearInterval(playInterval); playInterval = null; }
  
-  var hAdj = simGoalAdj('h');
-  var aAdj = simGoalAdj('a');
-  var m = buildAdjustedMatch(state.home, state.away, hAdj, aAdj);
+  var m;
+  try {
+    var hAdj = simGoalAdj('h');
+    var aAdj = simGoalAdj('a');
+    m = buildAdjustedMatch(state.home, state.away, hAdj, aAdj);
+  } catch (err) {
+    console.warn('Enhanced sim failed, using original h2h:', err);
+    m = h2h(state.home, state.away);
+  }
  
   state.match = m; state.evs = []; state.score = { h: 0, a: 0 };
   state.playing = true; state.fin = false; render();
@@ -1057,7 +1063,7 @@ function doKickOff() {
       setTimeout(function() {
         state.fin = true; state.playing = false;
         state.hist = [{ home: m.hTeam.name, away: m.aTeam.name, hG: m.hG, aG: m.aG }].concat(state.hist.slice(0, 4));
-        checkPred(m.hG, m.aG);
+        try { checkPred(m.hG, m.aG); } catch (e) { console.warn('Prediction check failed:', e); }
         saveMatchResult(m);
         render();
       }, 600);
@@ -1067,7 +1073,8 @@ function doKickOff() {
     state.evs = state.evs.concat([ev]);
     if (ev.type === 'goal') state.score = { h: ev.hS, a: ev.aS };
     i++;
-    var feed = document.getElementById('feed'); var sc = document.getElementById('ls');
+    var feed = document.getElementById('feed');
+    var sc = document.getElementById('ls');
     if (sc) sc.textContent = state.score.h + ' - ' + state.score.a;
     if (feed) {
       feed.innerHTML = state.evs.map(function(e) {
@@ -1089,7 +1096,7 @@ function doKickOff() {
     }
   }, 850);
 }
- 
+    
 // ── Slider (clean native range) ──
 function simSlider(id, val, label) {
   var col = val > 66 ? '#ff1744' : val > 33 ? '#ffd740' : '#00e676';
