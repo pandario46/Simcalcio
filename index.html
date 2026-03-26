@@ -992,9 +992,9 @@ function buildAdjustedMatch(ha, aa, hGAdj, aGAdj) {
   });
  
   // Card events with real player names
-  var cardMult = 1 + ((state.sim.refStrictness - 50) / 50) * 0.8;
+  var cardMult = 1 + ((state.simSet.refStrictness - 50) / 50) * 0.8;
   var numCards = Math.max(0, Math.floor((Math.floor(Math.random() * 4) + 1) * cardMult));
-  if (state.sim.rivalry) numCards += Math.floor(Math.random() * 3);
+  if (state.simSet.rivalry) numCards += Math.floor(Math.random() * 3);
   var cMins = mins.slice(totalGoals, totalGoals + numCards).sort(function(a, b) { return a - b; });
   cMins.forEach(function(min) {
     var cardTeam = Math.random() > 0.5 ? ha : aa;
@@ -1017,8 +1017,8 @@ function buildAdjustedMatch(ha, aa, hGAdj, aGAdj) {
   var o = dc.outcomes;
  
   // Tactic label from formations
-  var hForm = SIM_FORMATIONS[state.sim.homeFormation] || SIM_FORMATIONS['default'];
-  var aForm = SIM_FORMATIONS[state.sim.awayFormation] || SIM_FORMATIONS['default'];
+  var hForm = SIM_FORMATIONS[tate.simSet.homeFormation] || SIM_FORMATIONS['default'];
+  var aForm = SIM_FORMATIONS[state.simSet.awayFormation] || SIM_FORMATIONS['default'];
   var tacticLabel = pressNote;
   if (hForm.label !== 'Default' || aForm.label !== 'Default') {
     tacticLabel = (hForm.label !== 'Default' ? hForm.label : 'Default') + ' vs ' +
@@ -1133,7 +1133,7 @@ function simFormSelect(id, val) {
 function simWeatherSelect() {
   return '<select class="S" id="sim_weather" data-action="simSetting" style="font-size:0.62rem;padding:4px 6px">' +
     Object.keys(SIM_WEATHER).map(function(k) {
-      return '<option value="' + k + '"' + (k === state.sim.weather ? ' selected' : '') + '>' + SIM_WEATHER[k].label + '</option>';
+      return '<option value="' + k + '"' + (k === state.simSet.weather ? ' selected' : '') + '>' + SIM_WEATHER[k].label + '</option>';
     }).join('') + '</select>';
 }
  
@@ -1497,23 +1497,23 @@ document.addEventListener('change', function(e) {
       render();
     }
     if (ac === 'simSetting') {
-      if (el.id === 'sim_homeFormation') state.sim.homeFormation = el.value;
-      else if (el.id === 'sim_awayFormation') state.sim.awayFormation = el.value;
-      else if (el.id === 'sim_weather') state.sim.weather = el.value;
+      if (el.id === 'sim_homeFormation') tate.simSet.homeFormation = el.value;
+      else if (el.id === 'sim_awayFormation') state.simSet.awayFormation = el.value;
+      else if (el.id === 'sim_weather') state.simSet.weather = el.value;
       render();
     }
     if (ac === 'simCheck') {
-      if (el.id === 'sim_homeAdv') state.sim.homeAdvantage = el.checked;
-      if (el.id === 'sim_rivalry') state.sim.rivalry = el.checked;
+      if (el.id === 'sim_homeAdv') state.simSet.homeAdvantage = el.checked;
+      if (el.id === 'sim_rivalry') state.simSet.rivalry = el.checked;
     }
     // Sliders: only update state + full render on RELEASE (change event)
     if (ac === 'simSlider') {
       var v2 = parseInt(el.value, 10);
-      if (el.id === 'sim_homeRotation') state.sim.homeRotation = v2;
-      else if (el.id === 'sim_awayRotation') state.sim.awayRotation = v2;
-      else if (el.id === 'sim_homeMorale') state.sim.homeMorale = v2;
-      else if (el.id === 'sim_awayMorale') state.sim.awayMorale = v2;
-      else if (el.id === 'sim_refStrictness') state.sim.refStrictness = v2;
+      if (el.id === 'sim_homeRotation') state.simSet.homeRotation = v2;
+      else if (el.id === 'sim_awayRotation') state.simSet.awayRotation = v2;
+      else if (el.id === 'sim_homeMorale') tate.simSet.homeMorale = v2;
+      else if (el.id === 'sim_awayMorale') state.simSet.awayMorale = v2;
+      else if (el.id === 'sim_refStrictness') state.simSet.refStrictness = v2;
       render();
     }
   }
