@@ -868,59 +868,785 @@ function renderTactics(){
   var matrixRows=bkKeys.map(function(atk){return'<div style="display:grid;grid-template-columns:100px repeat(3,1fr);gap:2px;margin-bottom:6px"><div style="font-size:0.62rem;color:#c9a84c;display:flex;align-items:center">'+bkL[atk]+'</div>'+bkKeys.map(function(def){var mu=BLOCK_MU[atk+'_vs_'+def]||{label:'',gm:1.0};var col=mu.gm>1.05?'#00e676':mu.gm<0.95?'#ff1744':'#ffd740';return'<div style="background:#0c1018;border:1px solid #181e28;padding:8px;text-align:center"><div style="font-size:0.6rem;color:'+col+';font-weight:600">'+mu.label+'</div><div style="font-size:0.54rem;color:#555">x'+mu.gm+'</div></div>';}).join('')+'</div>';}).join('');
   return'<div><div style="font-family:Georgia,serif;font-size:1.25rem;font-weight:700;margin-bottom:16px">Tactical Analysis</div><div style="background:#0c1018;border:1px solid #181e28;padding:14px 16px;margin-bottom:12px"><div style="font-size:0.58rem;color:#c9a84c;letter-spacing:0.14em;text-transform:uppercase;margin-bottom:10px">PPDA League Table</div>'+ppda_rows+'</div><div style="background:#0c1018;border:1px solid #181e28;padding:14px 16px"><div style="font-size:0.58rem;color:#c9a84c;letter-spacing:0.14em;text-transform:uppercase;margin-bottom:10px">Block Matchup Matrix</div>'+matrixHeader+matrixRows+'</div></div>';
 }
- 
+ // ═══════════════════════════════════════════════════
+// SIMULATOR TAB - ENHANCED
 // ═══════════════════════════════════════════════════
-// SIMULATOR TAB
-// ═══════════════════════════════════════════════════
  
-function buildSelect(id,val){return'<select class="S" id="'+id+'" data-action="selchange">'+TEAMS.map(function(t){return'<option value="'+t.abbr+'"'+(t.abbr===val?' selected':'')+'>'+esc(t.name)+'</option>';}).join('')+'</select>';}
- 
-function doKickOff(){
-  if(state.home===state.away||state.playing)return;if(playInterval){clearInterval(playInterval);playInterval=null;}
-  var m=h2h(state.home,state.away);state.match=m;state.evs=[];state.score={h:0,a:0};state.playing=true;state.fin=false;render();
-  var i=0;playInterval=setInterval(function(){
-    if(i>=m.evs.length){clearInterval(playInterval);playInterval=null;setTimeout(function(){state.fin=true;state.playing=false;state.hist=[{home:m.hTeam.name,away:m.aTeam.name,hG:m.hG,aG:m.aG}].concat(state.hist.slice(0,4));saveMatchResult(m);render();},600);return;}
-    var ev=m.evs[i];state.evs=state.evs.concat([ev]);if(ev.type==='goal')state.score={h:ev.hS,a:ev.aS};i++;
-    var feed=document.getElementById('feed');var sc=document.getElementById('ls');
-    if(sc)sc.textContent=state.score.h+' - '+state.score.a;
-    if(feed){feed.innerHTML=state.evs.map(function(ev){return'<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:'+(ev.type==='goal'?'rgba(201,168,76,0.06)':'#0c1018')+';border:1px solid '+(ev.type==='goal'?'#c9a84c22':'#12161c')+';margin-bottom:2px"><span>'+(ev.type==='goal'?'\u26BD':'\u{1F7E8}')+'</span><span style="font-size:0.75rem">'+esc(ev.type==='goal'?ev.scorer+' ('+ev.min+"')":ev.team+' ('+ev.min+"')")+'</span></div>';}).join('');feed.scrollTop=feed.scrollHeight;}
-  },850);
+// ── State extensions for new features ──
+if (state.simSettings === undefined) {
+  state.simSettings = {
+    homeRotation: 0,      // 0-100 slider: how much squad rotation
+    awayRotation: 0,
+    homeFormation: 'default', // formation/strategy override
+    awayFormation: 'default',
+    homeMorale: 50,       // 0-100: team morale
+    awayMorale: 50,
+    weather: 'clear',     // clear, rain, snow, wind
+    homeAdvantage: true,   // home crowd factor
+    refStrictness: 50,    // 0-100: how strict the referee is
+    fatigue: 50,          // 0-100: season fatigue level
+    rivalry: false        // derby/rivalry match intensity
+  };
+}
+if (state.prediction === undefined) {
+  state.prediction = { h: '', a: '', submitted: false, correct: false, streak: 0, totalCorrect: 0, totalAttempts: 0, coins: 0 };
 }
  
-function renderSimulator(){
-  var hT=TEAMS.find(function(t){return t.abbr===state.home;}),aT=TEAMS.find(function(t){return t.abbr===state.away;});
-  var hM=getMomentum(hT.form),aM=getMomentum(aT.form);
-  var preProbs='';
-  if(!state.match&&hT.abbr!==aT.abbr){
-    var dc=dcAnalyse(state.home,state.away);var o=dc.outcomes;var topS=dc.topScores.slice(0,3);
-    preProbs='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:8px">'+[['Win',o.homeWin,'#00e676'],['Draw',o.draw,'#ffd740'],['Loss',o.awayWin,'#ff1744']].map(function(x){return'<div style="background:#0c1018;border:1px solid #181e28;padding:10px;text-align:center"><div style="font-size:0.54rem;color:#555;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px">'+x[0]+'</div><div style="font-family:Georgia,serif;font-size:1.4rem;font-weight:700;color:'+x[2]+'">'+(x[1]*100).toFixed(1)+'%</div></div>';}).join('')+'</div>'
-      +'<div style="background:#0c1018;border:1px solid #181e28;padding:8px 12px;margin-bottom:12px;display:flex;gap:12px;justify-content:center"><span style="font-size:0.54rem;color:#555">DC Predicted:</span>'+topS.map(function(s){return'<span style="font-size:0.72rem;color:#c9a84c;font-weight:600">'+s.h+'-'+s.a+'</span><span style="font-size:0.54rem;color:#555"> ('+(s.p*100).toFixed(1)+'%)</span>';}).join(' \u00A0 ')+'</div>';
-  }
-  var matchArea='';
-  if(state.match){
-    var topScoreInfo=state.match.topScores?'<div style="display:flex;gap:8px;justify-content:center;margin-top:6px;flex-wrap:wrap">'+state.match.topScores.slice(0,4).map(function(s){var isActual=s.h===state.match.hG&&s.a===state.match.aG;return'<span style="font-size:0.6rem;padding:2px 6px;background:'+(isActual?'rgba(201,168,76,0.2)':'transparent')+';color:'+(isActual?'#c9a84c':'#555')+';border:1px solid '+(isActual?'#c9a84c':'#222')+';border-radius:2px">'+s.h+'-'+s.a+' ('+(s.p*100).toFixed(1)+'%)</span>';}).join('')+'</div>':'';
-    matchArea='<div style="background:#0c1018;border:1px solid #181e28;padding:18px 20px;margin-bottom:8px;text-align:center">'
-      +'<div style="font-size:0.6rem;color:#555;margin-bottom:4px">'+(state.fin?'Full Time':'<span class="pulse" style="color:#ff1744;font-size:0.7rem">LIVE</span>')+'</div>'
-      +'<div style="font-family:Georgia,serif;font-size:3rem;font-weight:900;color:#c9a84c" id="ls">'+state.score.h+' - '+state.score.a+'</div>'
-      +'<div style="font-size:0.72rem;color:#555;margin-top:4px">'+esc(state.match.hTeam.name)+' vs '+esc(state.match.aTeam.name)+'</div>'
-      +'<div style="font-size:0.6rem;color:#444;margin-top:6px">'+state.match.tacticLabel+'</div>'
-      +(state.match.pressNote?'<div style="font-size:0.56rem;color:#555;margin-top:3px">'+state.match.pressNote+'</div>':'')
-      +topScoreInfo+'</div><div id="feed" style="max-height:220px;overflow-y:auto;margin-bottom:8px"></div>';
-  }
-  var histRows=state.hist.length?state.hist.map(function(h){return'<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 10px;border-bottom:1px solid #0d1117;font-size:0.7rem"><span style="color:#888">'+esc(h.home)+'</span><span style="color:#c9a84c;font-weight:700">'+h.hG+' - '+h.aG+'</span><span style="color:#888">'+esc(h.away)+'</span></div>';}).join(''):'';
-  return'<div><div style="font-family:Georgia,serif;font-size:1.25rem;font-weight:700;margin-bottom:16px">H2H Simulator</div>'
-    +'<div style="display:grid;grid-template-columns:1fr 40px 1fr;gap:8px;align-items:end;margin-bottom:12px"><div>'+buildSelect('sh',state.home)+'</div><div style="text-align:center;font-size:0.7rem;color:#555;padding-bottom:10px">vs</div><div>'+buildSelect('sa',state.away)+'</div></div>'
-    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">'+[{t:hT,m:hM},{t:aT,m:aM}].map(function(x){
-      var s20=STATS20.find(function(s){return s.abbr===x.t.abbr;})||{};var ppda_col=s20.ppda?(s20.ppda<9?'#ff1744':s20.ppda<12?'#ffd740':'#4fc3f7'):'#555';
-      return'<div style="background:#0c1018;border:1px solid #181e28;padding:10px"><div style="font-size:0.6rem;color:#555;margin-bottom:4px">'+esc(x.t.name)+'</div>'
-        +'<div style="display:flex;gap:3px;margin-bottom:5px">'+x.t.form.map(colorBox).join('')+'</div>'
-        +'<div style="font-size:0.65rem;color:'+x.m.color+';margin-bottom:4px">'+x.m.emoji+' '+x.m.label+'</div>'
-        +(s20.ppda?'<div style="display:flex;gap:8px;flex-wrap:wrap"><span style="font-size:0.56rem;color:#555">PPDA <span style="color:'+ppda_col+'">'+s20.ppda+'</span></span><span style="font-size:0.56rem;color:#555">xG <span style="color:#69f0ae">'+s20.xg+'</span></span><span style="font-size:0.56rem;color:#555">xGA <span style="color:#ffd740">'+s20.xga+'</span></span></div>':'')+'</div>';
-    }).join('')+'</div>'+preProbs
-    +'<div style="text-align:center;margin-bottom:14px"><button class="B" data-action="kickoff" '+(state.home===state.away||state.playing?'disabled':'')+'>'+(state.playing?'Live\u2026':state.fin?'Replay':'Kick Off')+'</button></div>'
-    +matchArea+(state.hist.length?'<div style="background:#0c1018;border:1px solid #181e28;margin-top:8px"><div style="padding:8px 10px;font-size:0.58rem;color:#555;letter-spacing:0.1em;text-transform:uppercase;border-bottom:1px solid #151b25">Match History</div>'+histRows+'</div>':'')+'</div>';
+// ── Formation definitions ──
+var FORMATIONS = {
+  'default':    { label: 'Default',       atkMod: 0,    defMod: 0,    midMod: 0,    desc: 'Team plays their natural style' },
+  '4-3-3-atk':  { label: '4-3-3 Attack',  atkMod: 0.12, defMod:-0.08, midMod: 0.02, desc: 'High press, wing overloads' },
+  '4-4-2-flat': { label: '4-4-2 Flat',    atkMod:-0.02, defMod: 0.06, midMod: 0.05, desc: 'Compact midfield, counter-attack' },
+  '3-5-2':      { label: '3-5-2',         atkMod: 0.05, defMod:-0.04, midMod: 0.10, desc: 'Midfield dominance, wing-backs' },
+  '5-3-2-park': { label: '5-3-2 Park Bus', atkMod:-0.15, defMod: 0.18, midMod:-0.02, desc: 'Ultra defensive, deep block' },
+  '4-2-3-1':    { label: '4-2-3-1',       atkMod: 0.06, defMod: 0.04, midMod: 0.03, desc: 'Balanced, creative #10 role' },
+  '3-4-3':      { label: '3-4-3',         atkMod: 0.14, defMod:-0.12, midMod: 0.04, desc: 'All-out attack, high risk' },
+  '4-1-4-1':    { label: '4-1-4-1',       atkMod:-0.04, defMod: 0.10, midMod: 0.06, desc: 'Defensive mid anchor, wide play' },
+  '4-3-3-tiki':  { label: '4-3-3 Tiki-Taka', atkMod: 0.04, defMod: 0.02, midMod: 0.12, desc: 'Possession-based, short passing' }
+};
+ 
+var WEATHER_EFFECTS = {
+  'clear':  { label: '☀️ Clear',     atkMod: 0,    defMod: 0,    chaosChance: 0,    desc: 'Perfect conditions' },
+  'rain':   { label: '🌧️ Rain',      atkMod:-0.03, defMod:-0.05, chaosChance: 0.08, desc: 'Slippery pitch, more errors' },
+  'snow':   { label: '❄️ Snow',      atkMod:-0.06, defMod:-0.08, chaosChance: 0.12, desc: 'Heavy pitch, unpredictable bounces' },
+  'wind':   { label: '💨 Wind',      atkMod:-0.04, defMod:-0.02, chaosChance: 0.06, desc: 'Long balls affected, crossing harder' },
+  'fog':    { label: '🌫️ Fog',       atkMod:-0.02, defMod:-0.03, chaosChance: 0.10, desc: 'Low visibility, miscommunication' },
+  'heat':   { label: '🔥 Extreme Heat', atkMod:-0.05, defMod:-0.04, chaosChance: 0.04, desc: 'Fatigue builds faster' }
+};
+ 
+// ── Compute modifiers from settings ──
+function computeSimModifiers(side) {
+  var s = state.simSettings;
+  var rotation = side === 'home' ? s.homeRotation : s.awayRotation;
+  var formation = side === 'home' ? s.homeFormation : s.awayFormation;
+  var morale = side === 'home' ? s.homeMorale : s.awayMorale;
+ 
+  var f = FORMATIONS[formation] || FORMATIONS['default'];
+  var w = WEATHER_EFFECTS[s.weather] || WEATHER_EFFECTS['clear'];
+ 
+  // Rotation penalty: 0 rotation = full strength, 100 = heavy rotation (weaker)
+  var rotPenalty = -(rotation / 100) * 0.18; // up to -18% strength
+ 
+  // Morale bonus: 50 = neutral, 100 = +8%, 0 = -8%
+  var moraleBonus = ((morale - 50) / 50) * 0.08;
+ 
+  // Home advantage
+  var homeMod = (side === 'home' && s.homeAdvantage) ? 0.05 : 0;
+ 
+  // Fatigue: 50 = neutral, 100 = tired (-6%), 0 = fresh (+3%)
+  var fatigueMod = -((s.fatigue - 50) / 50) * 0.06;
+ 
+  // Rivalry intensity: more chaos, slight attack boost
+  var rivalryAtk = s.rivalry ? 0.03 : 0;
+  var rivalryChaos = s.rivalry ? 0.06 : 0;
+ 
+  // Ref strictness affects number of cards (handled in h2h), and slightly affects aggression
+  var refMod = ((s.refStrictness - 50) / 50) * 0.02; // strict ref = slightly less attack
+ 
+  return {
+    atkTotal:  f.atkMod + w.atkMod + rotPenalty + moraleBonus + homeMod + fatigueMod + rivalryAtk - refMod,
+    defTotal:  f.defMod + w.defMod + (rotPenalty * 0.5) + (moraleBonus * 0.5),
+    midTotal:  f.midMod + (moraleBonus * 0.3),
+    chaosChance: w.chaosChance + rivalryChaos,
+    cardMultiplier: 1 + ((s.refStrictness - 50) / 50) * 0.8, // 0.6x to 1.8x card frequency
+    formationLabel: f.label,
+    weatherLabel: w.label
+  };
 }
  
+// ── Enhanced h2h that uses modifiers ──
+// Wrap the original h2h to apply modifiers
+var _origH2H = typeof h2h === 'function' ? h2h : null;
+ 
+function h2hEnhanced(homeAbbr, awayAbbr) {
+  var hMods = computeSimModifiers('home');
+  var aMods = computeSimModifiers('away');
+ 
+  // Call original h2h
+  var m = _origH2H ? _origH2H(homeAbbr, awayAbbr) : h2h(homeAbbr, awayAbbr);
+ 
+  // Apply modifiers to the result
+  // We'll adjust goals based on attack/defense modifiers
+  var hGoalAdj = Math.round((hMods.atkTotal - aMods.defTotal) * 3); // rough adjustment
+  var aGoalAdj = Math.round((aMods.atkTotal - hMods.defTotal) * 3);
+ 
+  // Chaos factor - random extra goals from weather/rivalry
+  var chaosGoalsH = 0, chaosGoalsA = 0;
+  if (Math.random() < hMods.chaosChance) chaosGoalsH = Math.random() < 0.5 ? 1 : -1;
+  if (Math.random() < aMods.chaosChance) chaosGoalsA = Math.random() < 0.5 ? 1 : -1;
+ 
+  m.hG = Math.max(0, m.hG + hGoalAdj + chaosGoalsH);
+  m.aG = Math.max(0, m.aG + aGoalAdj + chaosGoalsA);
+ 
+  // Regenerate events to match adjusted score
+  m = regenerateEvents(m, hMods, aMods);
+ 
+  // Attach modifier info for display
+  m.simMods = { home: hMods, away: aMods };
+  m.settingsSnapshot = JSON.parse(JSON.stringify(state.simSettings));
+ 
+  return m;
+}
+ 
+// ── Regenerate match events to match adjusted goals ──
+function regenerateEvents(m, hMods, aMods) {
+  var evs = [];
+  var hGoals = m.hG, aGoals = m.aG;
+  var totalGoals = hGoals + aGoals;
+ 
+  // Generate goal events
+  var usedMinutes = {};
+  for (var g = 0; g < totalGoals; g++) {
+    var min;
+    do { min = Math.floor(Math.random() * 90) + 1; } while (usedMinutes[min]);
+    usedMinutes[min] = true;
+ 
+    var isHome = g < hGoals;
+    var team = isHome ? m.hTeam : m.aTeam;
+    var scorers = team.players ? team.players.filter(function(p) {
+      return p.pos === 'FW' || p.pos === 'MF';
+    }) : [{ name: team.name + ' Player' }];
+    var scorer = scorers[Math.floor(Math.random() * scorers.length)] || { name: 'Unknown' };
+ 
+    evs.push({
+      type: 'goal',
+      min: min,
+      team: team.name,
+      scorer: scorer.name || 'Unknown',
+      hS: 0, aS: 0 // will be recalculated
+    });
+  }
+ 
+  // Generate card events based on ref strictness
+  var numCards = Math.floor((Math.random() * 4 + 1) * ((hMods.cardMultiplier + aMods.cardMultiplier) / 2));
+  for (var c = 0; c < numCards; c++) {
+    var min2;
+    do { min2 = Math.floor(Math.random() * 90) + 1; } while (usedMinutes[min2]);
+    usedMinutes[min2] = true;
+ 
+    var cardTeam = Math.random() < 0.5 ? m.hTeam : m.aTeam;
+    evs.push({
+      type: 'card',
+      min: min2,
+      team: cardTeam.name
+    });
+  }
+ 
+  // Sort by minute
+  evs.sort(function(a, b) { return a.min - b.min; });
+ 
+  // Recalculate running score
+  var runH = 0, runA = 0;
+  evs.forEach(function(ev) {
+    if (ev.type === 'goal') {
+      if (ev.team === m.hTeam.name) runH++;
+      else runA++;
+      ev.hS = runH;
+      ev.aS = runA;
+    }
+  });
+ 
+  m.evs = evs;
+  return m;
+}
+ 
+// ── Prediction reward system ──
+function checkPrediction(actualH, actualA) {
+  if (!state.prediction.submitted) return;
+  var pH = parseInt(state.prediction.h, 10);
+  var pA = parseInt(state.prediction.a, 10);
+  if (isNaN(pH) || isNaN(pA)) return;
+ 
+  state.prediction.totalAttempts++;
+ 
+  var exactMatch = (pH === actualH && pA === actualA);
+  var correctResult = (
+    (pH > pA && actualH > actualA) ||
+    (pH < pA && actualH < actualA) ||
+    (pH === pA && actualH === actualA)
+  );
+  var goalDiffMatch = ((pH - pA) === (actualH - actualA));
+ 
+  var reward = 0;
+  var msg = '';
+ 
+  if (exactMatch) {
+    reward = 50;
+    msg = '🎯 EXACT SCORE! +50 coins!';
+    state.prediction.streak++;
+    state.prediction.totalCorrect++;
+  } else if (goalDiffMatch) {
+    reward = 25;
+    msg = '📐 Correct goal difference! +25 coins!';
+    state.prediction.streak++;
+    state.prediction.totalCorrect++;
+  } else if (correctResult) {
+    reward = 10;
+    msg = '✅ Correct result! +10 coins!';
+    state.prediction.streak = Math.max(0, state.prediction.streak);
+    state.prediction.totalCorrect++;
+  } else {
+    reward = 0;
+    msg = '❌ Wrong prediction';
+    state.prediction.streak = 0;
+  }
+ 
+  // Streak bonus
+  if (state.prediction.streak >= 3) {
+    var streakBonus = state.prediction.streak * 5;
+    reward += streakBonus;
+    msg += ' 🔥 Streak x' + state.prediction.streak + ' (+' + streakBonus + ' bonus)';
+  }
+ 
+  state.prediction.coins += reward;
+  state.prediction.correct = exactMatch;
+  state.prediction.lastReward = reward;
+  state.prediction.lastMsg = msg;
+  state.prediction.lastPrediction = { h: pH, a: pA };
+}
+ 
+// ── Build UI helpers ──
+function buildSelect(id, val) {
+  return '<select class="S" id="' + id + '" data-action="selchange">' +
+    TEAMS.map(function(t) {
+      return '<option value="' + t.abbr + '"' + (t.abbr === val ? ' selected' : '') + '>' + esc(t.name) + '</option>';
+    }).join('') + '</select>';
+}
+ 
+function buildFormationSelect(id, val) {
+  return '<select class="S" id="' + id + '" data-action="simSetting" style="font-size:0.65rem;padding:4px 6px">' +
+    Object.keys(FORMATIONS).map(function(key) {
+      var f = FORMATIONS[key];
+      return '<option value="' + key + '"' + (key === val ? ' selected' : '') + '>' + f.label + '</option>';
+    }).join('') + '</select>';
+}
+ 
+function buildWeatherSelect() {
+  return '<select class="S" id="sim_weather" data-action="simSetting" style="font-size:0.65rem;padding:4px 6px">' +
+    Object.keys(WEATHER_EFFECTS).map(function(key) {
+      var w = WEATHER_EFFECTS[key];
+      return '<option value="' + key + '"' + (key === state.simSettings.weather ? ' selected' : '') + '>' + w.label + '</option>';
+    }).join('') + '</select>';
+}
+ 
+function buildSlider(id, val, label, min, max) {
+  min = min || 0; max = max || 100;
+  var pct = ((val - min) / (max - min)) * 100;
+  var color = val > 66 ? '#ff1744' : val > 33 ? '#ffd740' : '#00e676';
+  return '<div style="margin-bottom:6px">' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">' +
+    '<span style="font-size:0.55rem;color:#666;text-transform:uppercase;letter-spacing:0.05em">' + label + '</span>' +
+    '<span style="font-size:0.6rem;color:' + color + ';font-weight:600">' + val + '%</span>' +
+    '</div>' +
+    '<div style="position:relative;height:6px;background:#0a0e14;border-radius:3px;border:1px solid #1a1f2e;cursor:pointer" id="' + id + '_track" data-slider="' + id + '">' +
+    '<div style="position:absolute;left:0;top:0;height:100%;width:' + pct + '%;background:linear-gradient(90deg,' + color + '44,' + color + ');border-radius:3px;transition:width 0.2s"></div>' +
+    '<div style="position:absolute;top:50%;left:' + pct + '%;transform:translate(-50%,-50%);width:14px;height:14px;background:' + color + ';border-radius:50%;border:2px solid #0a0e14;box-shadow:0 0 6px ' + color + '44;cursor:grab"></div>' +
+    '</div>' +
+    '<input type="range" min="' + min + '" max="' + max + '" value="' + val + '" id="' + id + '" data-action="simSlider" style="width:100%;margin-top:2px;opacity:0.01;height:12px;cursor:pointer;position:relative;z-index:2;margin-top:-12px">' +
+    '</div>';
+}
+ 
+function buildToggle(id, val, label) {
+  return '<div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0">' +
+    '<span style="font-size:0.58rem;color:#666">' + label + '</span>' +
+    '<div data-action="simToggle" data-toggle="' + id + '" style="width:36px;height:18px;background:' + (val ? '#c9a84c' : '#1a1f2e') + ';border-radius:9px;cursor:pointer;position:relative;transition:background 0.3s;border:1px solid ' + (val ? '#c9a84c55' : '#252b38') + '">' +
+    '<div style="position:absolute;top:2px;' + (val ? 'left:18px' : 'left:2px') + ';width:12px;height:12px;background:#fff;border-radius:50%;transition:left 0.3s;box-shadow:0 1px 3px rgba(0,0,0,0.3)"></div>' +
+    '</div></div>';
+}
+ 
+// ── Enhanced Kick Off ──
+function doKickOff() {
+  if (state.home === state.away || state.playing) return;
+  if (playInterval) { clearInterval(playInterval); playInterval = null; }
+ 
+  // Use enhanced h2h if available
+  var m;
+  if (_origH2H) {
+    m = h2hEnhanced(state.home, state.away);
+  } else {
+    m = h2h(state.home, state.away);
+  }
+ 
+  state.match = m;
+  state.evs = [];
+  state.score = { h: 0, a: 0 };
+  state.playing = true;
+  state.fin = false;
+ 
+  // Check prediction on finish
+  render();
+ 
+  var i = 0;
+  playInterval = setInterval(function() {
+    if (i >= m.evs.length) {
+      clearInterval(playInterval);
+      playInterval = null;
+      setTimeout(function() {
+        state.fin = true;
+        state.playing = false;
+        state.hist = [{
+          home: m.hTeam.name,
+          away: m.aTeam.name,
+          hG: m.hG,
+          aG: m.aG
+        }].concat(state.hist.slice(0, 4));
+ 
+        // Check prediction
+        checkPrediction(m.hG, m.aG);
+ 
+        saveMatchResult(m);
+        render();
+      }, 600);
+      return;
+    }
+ 
+    var ev = m.evs[i];
+    state.evs = state.evs.concat([ev]);
+    if (ev.type === 'goal') state.score = { h: ev.hS, a: ev.aS };
+    i++;
+ 
+    var feed = document.getElementById('feed');
+    var sc = document.getElementById('ls');
+    if (sc) sc.textContent = state.score.h + ' - ' + state.score.a;
+    if (feed) {
+      feed.innerHTML = state.evs.map(function(ev) {
+        var icon = ev.type === 'goal' ? '\u26BD' : '\uD83D\uDFE8';
+        var bg = ev.type === 'goal' ? 'rgba(201,168,76,0.06)' : '#0c1018';
+        var border = ev.type === 'goal' ? '#c9a84c22' : '#12161c';
+        var text = ev.type === 'goal' ? ev.scorer + ' (' + ev.min + "'" + ')' : ev.team + ' (' + ev.min + "'" + ')';
+        return '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:' + bg + ';border:1px solid ' + border + ';margin-bottom:2px;border-radius:3px">' +
+          '<span>' + icon + '</span>' +
+          '<span style="font-size:0.72rem;color:#aaa">' + ev.min + "'</span>" +
+          '<span style="font-size:0.75rem">' + esc(text) + '</span>' +
+          (ev.type === 'goal' ? '<span style="margin-left:auto;font-size:0.65rem;color:#c9a84c;font-weight:700">' + ev.hS + '-' + ev.aS + '</span>' : '') +
+          '</div>';
+      }).join('');
+      feed.scrollTop = feed.scrollHeight;
+    }
+  }, 850);
+}
+ 
+// ── Event handler for sim settings ──
+function handleSimSettingChange(el) {
+  var id = el.id;
+  var val = el.value;
+ 
+  if (id === 'sim_homeRotation') state.simSettings.homeRotation = parseInt(val, 10);
+  else if (id === 'sim_awayRotation') state.simSettings.awayRotation = parseInt(val, 10);
+  else if (id === 'sim_homeFormation') state.simSettings.homeFormation = val;
+  else if (id === 'sim_awayFormation') state.simSettings.awayFormation = val;
+  else if (id === 'sim_homeMorale') state.simSettings.homeMorale = parseInt(val, 10);
+  else if (id === 'sim_awayMorale') state.simSettings.awayMorale = parseInt(val, 10);
+  else if (id === 'sim_weather') state.simSettings.weather = val;
+  else if (id === 'sim_refStrictness') state.simSettings.refStrictness = parseInt(val, 10);
+  else if (id === 'sim_fatigue') state.simSettings.fatigue = parseInt(val, 10);
+ 
+  // Prediction inputs
+  else if (id === 'pred_home') state.prediction.h = val;
+  else if (id === 'pred_away') state.prediction.a = val;
+ 
+  render();
+}
+ 
+function handleSimToggle(toggleId) {
+  if (toggleId === 'sim_homeAdvantage') state.simSettings.homeAdvantage = !state.simSettings.homeAdvantage;
+  else if (toggleId === 'sim_rivalry') state.simSettings.rivalry = !state.simSettings.rivalry;
+  render();
+}
+ 
+function handlePredictionSubmit() {
+  var pH = document.getElementById('pred_home');
+  var pA = document.getElementById('pred_away');
+  if (pH && pA && pH.value !== '' && pA.value !== '') {
+    state.prediction.h = pH.value;
+    state.prediction.a = pA.value;
+    state.prediction.submitted = true;
+    state.prediction.lastMsg = '';
+    state.prediction.lastReward = 0;
+    render();
+  }
+}
+ 
+function resetPrediction() {
+  state.prediction.h = '';
+  state.prediction.a = '';
+  state.prediction.submitted = false;
+  state.prediction.lastMsg = '';
+  render();
+}
+ 
+// ── Add to your global click/change handler ──
+// You'll need to wire these into your existing event delegation:
+// For data-action="simSlider" → handleSimSettingChange(el)
+// For data-action="simSetting" → handleSimSettingChange(el)
+// For data-action="simToggle" → handleSimToggle(el.dataset.toggle)
+// For data-action="submitPrediction" → handlePredictionSubmit()
+// For data-action="resetPrediction" → resetPrediction()
+ 
+// ═══════════════════════════════════════════════════
+// RENDER SIMULATOR
+// ═══════════════════════════════════════════════════
+ 
+function renderSimulator() {
+  var hT = TEAMS.find(function(t) { return t.abbr === state.home; });
+  var aT = TEAMS.find(function(t) { return t.abbr === state.away; });
+  var hM = getMomentum(hT.form), aM = getMomentum(aT.form);
+  var ss = state.simSettings;
+ 
+  // ── Pre-match probabilities ──
+  var preProbs = '';
+  if (!state.match && hT.abbr !== aT.abbr) {
+    var dc = dcAnalyse(state.home, state.away);
+    var o = dc.outcomes;
+    var topS = dc.topScores.slice(0, 3);
+ 
+    preProbs = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:8px">' +
+      [['Win', o.homeWin, '#00e676'], ['Draw', o.draw, '#ffd740'], ['Loss', o.awayWin, '#ff1744']].map(function(x) {
+        return '<div style="background:#0c1018;border:1px solid #181e28;padding:10px;text-align:center">' +
+          '<div style="font-size:0.54rem;color:#555;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px">' + x[0] + '</div>' +
+          '<div style="font-family:Georgia,serif;font-size:1.4rem;font-weight:700;color:' + x[2] + '">' + (x[1] * 100).toFixed(1) + '%</div></div>';
+      }).join('') + '</div>' +
+      '<div style="background:#0c1018;border:1px solid #181e28;padding:8px 12px;margin-bottom:12px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap">' +
+      '<span style="font-size:0.54rem;color:#555">DC Predicted:</span>' +
+      topS.map(function(s) {
+        return '<span style="font-size:0.72rem;color:#c9a84c;font-weight:600">' + s.h + '-' + s.a + '</span>' +
+          '<span style="font-size:0.54rem;color:#555"> (' + (s.p * 100).toFixed(1) + '%)</span>';
+      }).join(' \u00A0 ') + '</div>';
+  }
+ 
+  // ── Match Settings Panel ──
+  var hFormation = FORMATIONS[ss.homeFormation] || FORMATIONS['default'];
+  var aFormation = FORMATIONS[ss.awayFormation] || FORMATIONS['default'];
+  var weather = WEATHER_EFFECTS[ss.weather] || WEATHER_EFFECTS['clear'];
+ 
+  var settingsPanel = '<div style="background:#080c12;border:1px solid #181e28;padding:14px;margin-bottom:12px;border-radius:4px">' +
+    '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;cursor:pointer" data-action="toggleSettings">' +
+    '<span style="font-size:0.65rem;color:#c9a84c;font-weight:600;letter-spacing:0.1em;text-transform:uppercase">⚙️ Match Settings</span>' +
+    '<span style="font-size:0.5rem;color:#444;margin-left:auto">Tap to expand</span>' +
+    '</div>' +
+ 
+    // Two-column layout for home/away settings
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">' +
+ 
+    // Home settings
+    '<div style="background:#0c1018;border:1px solid #151b25;padding:10px;border-radius:3px">' +
+    '<div style="font-size:0.58rem;color:#c9a84c;font-weight:600;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em">' + esc(hT.name) + '</div>' +
+    '<div style="margin-bottom:8px"><div style="font-size:0.52rem;color:#555;margin-bottom:3px">FORMATION</div>' +
+    buildFormationSelect('sim_homeFormation', ss.homeFormation) + '</div>' +
+    '<div style="font-size:0.48rem;color:#444;margin-bottom:8px;font-style:italic">' + hFormation.desc + '</div>' +
+    buildSlider('sim_homeRotation', ss.homeRotation, '🔄 Squad Rotation') +
+    buildSlider('sim_homeMorale', ss.homeMorale, '💪 Team Morale') +
+    '</div>' +
+ 
+    // Away settings
+    '<div style="background:#0c1018;border:1px solid #151b25;padding:10px;border-radius:3px">' +
+    '<div style="font-size:0.58rem;color:#c9a84c;font-weight:600;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em">' + esc(aT.name) + '</div>' +
+    '<div style="margin-bottom:8px"><div style="font-size:0.52rem;color:#555;margin-bottom:3px">FORMATION</div>' +
+    buildFormationSelect('sim_awayFormation', ss.awayFormation) + '</div>' +
+    '<div style="font-size:0.48rem;color:#444;margin-bottom:8px;font-style:italic">' + aFormation.desc + '</div>' +
+    buildSlider('sim_awayRotation', ss.awayRotation, '🔄 Squad Rotation') +
+    buildSlider('sim_awayMorale', ss.awayMorale, '💪 Team Morale') +
+    '</div>' +
+ 
+    '</div>' +
+ 
+    // Global settings row
+    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">' +
+ 
+    // Weather
+    '<div style="background:#0c1018;border:1px solid #151b25;padding:8px;border-radius:3px">' +
+    '<div style="font-size:0.52rem;color:#555;margin-bottom:3px">WEATHER</div>' +
+    buildWeatherSelect() +
+    '<div style="font-size:0.46rem;color:#444;margin-top:3px;font-style:italic">' + weather.desc + '</div>' +
+    '</div>' +
+ 
+    // Ref strictness
+    '<div style="background:#0c1018;border:1px solid #151b25;padding:8px;border-radius:3px">' +
+    buildSlider('sim_refStrictness', ss.refStrictness, '🟨 Ref Strictness') +
+    '</div>' +
+ 
+    // Fatigue
+    '<div style="background:#0c1018;border:1px solid #151b25;padding:8px;border-radius:3px">' +
+    buildSlider('sim_fatigue', ss.fatigue, '😓 Season Fatigue') +
+    '</div>' +
+ 
+    '</div>' +
+ 
+    // Toggles row
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' +
+    '<div style="background:#0c1018;border:1px solid #151b25;padding:8px;border-radius:3px">' +
+    buildToggle('sim_homeAdvantage', ss.homeAdvantage, '🏟️ Home Advantage') +
+    '</div>' +
+    '<div style="background:#0c1018;border:1px solid #151b25;padding:8px;border-radius:3px">' +
+    buildToggle('sim_rivalry', ss.rivalry, '🔥 Derby / Rivalry') +
+    '</div>' +
+    '</div>' +
+ 
+    // Modifier preview
+    (function() {
+      var hMods = computeSimModifiers('home');
+      var aMods = computeSimModifiers('away');
+      var fmtMod = function(v) { return (v >= 0 ? '+' : '') + (v * 100).toFixed(1) + '%'; };
+      var modColor = function(v) { return v > 0 ? '#00e676' : v < 0 ? '#ff1744' : '#555'; };
+      return '<div style="margin-top:10px;background:#0a0e14;border:1px solid #12161c;padding:8px;border-radius:3px">' +
+        '<div style="font-size:0.5rem;color:#555;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px">Effective Modifiers</div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:0.55rem">' +
+        '<div><span style="color:#666">' + esc(hT.name) + ':</span> ' +
+        '<span style="color:' + modColor(hMods.atkTotal) + '">ATK ' + fmtMod(hMods.atkTotal) + '</span> ' +
+        '<span style="color:' + modColor(hMods.defTotal) + '">DEF ' + fmtMod(hMods.defTotal) + '</span></div>' +
+        '<div><span style="color:#666">' + esc(aT.name) + ':</span> ' +
+        '<span style="color:' + modColor(aMods.atkTotal) + '">ATK ' + fmtMod(aMods.atkTotal) + '</span> ' +
+        '<span style="color:' + modColor(aMods.defTotal) + '">DEF ' + fmtMod(aMods.defTotal) + '</span></div>' +
+        '</div></div>';
+    })() +
+ 
+    '</div>';
+ 
+  // ── Prediction Panel ──
+  var predPanel = '';
+  if (!state.playing && !state.fin && hT.abbr !== aT.abbr) {
+    predPanel = '<div style="background:#080c12;border:1px solid #c9a84c22;padding:14px;margin-bottom:12px;border-radius:4px">' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">' +
+      '<span style="font-size:0.65rem;color:#c9a84c;font-weight:600;letter-spacing:0.1em;text-transform:uppercase">🎯 Predict the Score</span>' +
+      '<span style="margin-left:auto;font-size:0.6rem;color:#c9a84c;background:#c9a84c15;padding:2px 8px;border-radius:10px;border:1px solid #c9a84c33">🪙 ' + state.prediction.coins + ' coins</span>' +
+      '</div>' +
+ 
+      // Prediction input
+      '<div style="display:grid;grid-template-columns:1fr 30px 1fr;gap:6px;align-items:center;margin-bottom:10px">' +
+      '<div style="text-align:center">' +
+      '<div style="font-size:0.5rem;color:#555;margin-bottom:3px">' + esc(hT.name) + '</div>' +
+      '<input type="number" id="pred_home" min="0" max="15" value="' + (state.prediction.h || '') + '" ' +
+      'data-action="simSetting" ' +
+      'style="width:100%;text-align:center;font-size:1.2rem;font-weight:700;padding:8px;background:#0c1018;border:1px solid #252b38;color:#c9a84c;border-radius:4px;font-family:Georgia,serif"' +
+      (state.prediction.submitted ? ' disabled' : '') + '>' +
+      '</div>' +
+      '<div style="text-align:center;font-size:0.8rem;color:#555;font-weight:700">-</div>' +
+      '<div style="text-align:center">' +
+      '<div style="font-size:0.5rem;color:#555;margin-bottom:3px">' + esc(aT.name) + '</div>' +
+      '<input type="number" id="pred_away" min="0" max="15" value="' + (state.prediction.a || '') + '" ' +
+      'data-action="simSetting" ' +
+      'style="width:100%;text-align:center;font-size:1.2rem;font-weight:700;padding:8px;background:#0c1018;border:1px solid #252b38;color:#c9a84c;border-radius:4px;font-family:Georgia,serif"' +
+      (state.prediction.submitted ? ' disabled' : '') + '>' +
+      '</div>' +
+      '</div>' +
+ 
+      // Submit/Reset buttons
+      '<div style="display:flex;gap:8px;justify-content:center;margin-bottom:8px">' +
+      (!state.prediction.submitted ?
+        '<button class="B" data-action="submitPrediction" style="font-size:0.65rem;padding:6px 16px">🔒 Lock Prediction</button>' :
+        '<div style="display:flex;align-items:center;gap:8px">' +
+        '<span style="font-size:0.7rem;color:#00e676;font-weight:600">✓ Locked: ' + state.prediction.h + ' - ' + state.prediction.a + '</span>' +
+        '<button class="B" data-action="resetPrediction" style="font-size:0.55rem;padding:4px 10px;background:#1a1f2e;border:1px solid #252b38">Change</button>' +
+        '</div>'
+      ) +
+      '</div>' +
+ 
+      // Reward tiers info
+      '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-bottom:6px">' +
+      [
+        ['🎯 Exact Score', '+50', '#00e676'],
+        ['📐 Goal Diff', '+25', '#69f0ae'],
+        ['✅ Result', '+10', '#ffd740']
+      ].map(function(r) {
+        return '<div style="text-align:center;padding:4px;background:#0c1018;border:1px solid #151b25;border-radius:2px">' +
+          '<div style="font-size:0.46rem;color:#555">' + r[0] + '</div>' +
+          '<div style="font-size:0.6rem;color:' + r[2] + ';font-weight:600">' + r[1] + ' 🪙</div></div>';
+      }).join('') +
+      '</div>' +
+ 
+      // Stats
+      '<div style="display:flex;justify-content:center;gap:16px;font-size:0.5rem;color:#444">' +
+      '<span>Streak: <span style="color:' + (state.prediction.streak >= 3 ? '#ff6d00' : '#888') + '">' + (state.prediction.streak >= 3 ? '🔥 ' : '') + state.prediction.streak + '</span></span>' +
+      '<span>Accuracy: <span style="color:#888">' + (state.prediction.totalAttempts > 0 ? ((state.prediction.totalCorrect / state.prediction.totalAttempts) * 100).toFixed(0) + '%' : 'N/A') + '</span></span>' +
+      '<span>Total: <span style="color:#888">' + state.prediction.totalCorrect + '/' + state.prediction.totalAttempts + '</span></span>' +
+      '</div>' +
+ 
+      '</div>';
+  }
+ 
+  // ── Prediction result after match ──
+  var predResult = '';
+  if (state.fin && state.prediction.lastMsg) {
+    var isCorrect = state.prediction.lastReward >= 50;
+    var isPartial = state.prediction.lastReward > 0 && state.prediction.lastReward < 50;
+    var borderColor = isCorrect ? '#00e676' : isPartial ? '#ffd740' : '#ff1744';
+    var bgColor = isCorrect ? 'rgba(0,230,118,0.06)' : isPartial ? 'rgba(255,215,64,0.06)' : 'rgba(255,23,68,0.06)';
+ 
+    predResult = '<div style="background:' + bgColor + ';border:1px solid ' + borderColor + '44;padding:12px;margin-bottom:10px;border-radius:4px;text-align:center">' +
+      '<div style="font-size:0.8rem;margin-bottom:4px">' + state.prediction.lastMsg + '</div>' +
+      (state.prediction.lastPrediction ?
+        '<div style="font-size:0.6rem;color:#555">Your prediction: ' + state.prediction.lastPrediction.h + ' - ' + state.prediction.lastPrediction.a +
+        ' | Actual: ' + state.match.hG + ' - ' + state.match.aG + '</div>' : '') +
+      '<div style="font-size:0.65rem;color:#c9a84c;margin-top:4px">Balance: 🪙 ' + state.prediction.coins + ' coins</div>' +
+      '</div>';
+  }
+ 
+  // ── Live Match Area ──
+  var matchArea = '';
+  if (state.match) {
+    var topScoreInfo = state.match.topScores ? '<div style="display:flex;gap:8px;justify-content:center;margin-top:6px;flex-wrap:wrap">' +
+      state.match.topScores.slice(0, 4).map(function(s) {
+        var isActual = s.h === state.match.hG && s.a === state.match.aG;
+        return '<span style="font-size:0.6rem;padding:2px 6px;background:' + (isActual ? 'rgba(201,168,76,0.2)' : 'transparent') +
+          ';color:' + (isActual ? '#c9a84c' : '#555') + ';border:1px solid ' + (isActual ? '#c9a84c' : '#222') +
+          ';border-radius:2px">' + s.h + '-' + s.a + ' (' + (s.p * 100).toFixed(1) + '%)</span>';
+      }).join('') + '</div>' : '';
+ 
+    // Show active modifiers during match
+    var modsBadges = '';
+    if (state.match.simMods) {
+      var sm = state.match.settingsSnapshot;
+      var badges = [];
+      if (sm.homeFormation !== 'default') badges.push(FORMATIONS[sm.homeFormation].label + ' (H)');
+      if (sm.awayFormation !== 'default') badges.push(FORMATIONS[sm.awayFormation].label + ' (A)');
+      if (sm.weather !== 'clear') badges.push(WEATHER_EFFECTS[sm.weather].label);
+      if (sm.rivalry) badges.push('🔥 Derby');
+      if (sm.homeRotation > 30) badges.push('🔄 Rotated (H)');
+      if (sm.awayRotation > 30) badges.push('🔄 Rotated (A)');
+ 
+      if (badges.length) {
+        modsBadges = '<div style="display:flex;gap:4px;justify-content:center;flex-wrap:wrap;margin-top:6px">' +
+          badges.map(function(b) {
+            return '<span style="font-size:0.48rem;padding:2px 6px;background:#0a0e14;border:1px solid #1a1f2e;border-radius:10px;color:#888">' + b + '</span>';
+          }).join('') + '</div>';
+      }
+    }
+ 
+    matchArea = '<div style="background:#0c1018;border:1px solid #181e28;padding:18px 20px;margin-bottom:8px;text-align:center;border-radius:4px">' +
+      '<div style="font-size:0.6rem;color:#555;margin-bottom:4px">' +
+      (state.fin ? 'Full Time' : '<span class="pulse" style="color:#ff1744;font-size:0.7rem">● LIVE</span>') + '</div>' +
+      '<div style="font-family:Georgia,serif;font-size:3rem;font-weight:900;color:#c9a84c" id="ls">' + state.score.h + ' - ' + state.score.a + '</div>' +
+      '<div style="font-size:0.72rem;color:#555;margin-top:4px">' + esc(state.match.hTeam.name) + ' vs ' + esc(state.match.aTeam.name) + '</div>' +
+      '<div style="font-size:0.6rem;color:#444;margin-top:6px">' + state.match.tacticLabel + '</div>' +
+      (state.match.pressNote ? '<div style="font-size:0.56rem;color:#555;margin-top:3px">' + state.match.pressNote + '</div>' : '') +
+      modsBadges +
+      topScoreInfo +
+      '</div>' +
+      '<div id="feed" style="max-height:220px;overflow-y:auto;margin-bottom:8px"></div>';
+  }
+ 
+  // ── Match History ──
+  var histRows = state.hist.length ? state.hist.map(function(h) {
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 10px;border-bottom:1px solid #0d1117;font-size:0.7rem">' +
+      '<span style="color:#888">' + esc(h.home) + '</span>' +
+      '<span style="color:#c9a84c;font-weight:700">' + h.hG + ' - ' + h.aG + '</span>' +
+      '<span style="color:#888">' + esc(h.away) + '</span></div>';
+  }).join('') : '';
+ 
+  // ── Team Info Cards (enhanced) ──
+  var teamCards = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">' +
+    [{ t: hT, m: hM }, { t: aT, m: aM }].map(function(x) {
+      var s20 = STATS20.find(function(s) { return s.abbr === x.t.abbr; }) || {};
+      var ppda_col = s20.ppda ? (s20.ppda < 9 ? '#ff1744' : s20.ppda < 12 ? '#ffd740' : '#4fc3f7') : '#555';
+      return '<div style="background:#0c1018;border:1px solid #181e28;padding:10px;border-radius:3px">' +
+        '<div style="font-size:0.6rem;color:#555;margin-bottom:4px">' + esc(x.t.name) + '</div>' +
+        '<div style="display:flex;gap:3px;margin-bottom:5px">' + x.t.form.map(colorBox).join('') + '</div>' +
+        '<div style="font-size:0.65rem;color:' + x.m.color + ';margin-bottom:4px">' + x.m.emoji + ' ' + x.m.label + '</div>' +
+        (s20.ppda ? '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
+          '<span style="font-size:0.56rem;color:#555">PPDA <span style="color:' + ppda_col + '">' + s20.ppda + '</span></span>' +
+          '<span style="font-size:0.56rem;color:#555">xG <span style="color:#69f0ae">' + s20.xg + '</span></span>' +
+          '<span style="font-size:0.56rem;color:#555">xGA <span style="color:#ffd740">' + s20.xga + '</span></span></div>' : '') +
+        '</div>';
+    }).join('') + '</div>';
+ 
+  // ── Assemble everything ──
+  return '<div>' +
+    '<div style="font-family:Georgia,serif;font-size:1.25rem;font-weight:700;margin-bottom:16px">H2H Simulator</div>' +
+ 
+    // Team selectors
+    '<div style="display:grid;grid-template-columns:1fr 40px 1fr;gap:8px;align-items:end;margin-bottom:12px">' +
+    '<div>' + buildSelect('sh', state.home) + '</div>' +
+    '<div style="text-align:center;font-size:0.7rem;color:#555;padding-bottom:10px">vs</div>' +
+    '<div>' + buildSelect('sa', state.away) + '</div></div>' +
+ 
+    // Team info cards
+    teamCards +
+ 
+    // Pre-match probabilities
+    preProbs +
+ 
+    // Match settings panel (only show pre-match)
+    (!state.playing && !state.fin ? settingsPanel : '') +
+ 
+    // Prediction panel (only show pre-match)
+    predPanel +
+ 
+    // Prediction result (only show post-match)
+    predResult +
+ 
+    // Kick off button
+    '<div style="text-align:center;margin-bottom:14px">' +
+    '<button class="B" data-action="kickoff" ' +
+    (state.home === state.away || state.playing ? 'disabled' : '') + '>' +
+    (state.playing ? '● Live\u2026' : state.fin ? '↺ Replay' : '⚽ Kick Off') +
+    '</button>' +
+    (state.fin ? ' <button class="B" data-action="resetMatch" style="background:#1a1f2e;border:1px solid #252b38;margin-left:8px">New Match</button>' : '') +
+    '</div>' +
+ 
+    // Live match area
+    matchArea +
+ 
+    // Match history
+    (state.hist.length ?
+      '<div style="background:#0c1018;border:1px solid #181e28;margin-top:8px;border-radius:4px">' +
+      '<div style="padding:8px 10px;font-size:0.58rem;color:#555;letter-spacing:0.1em;text-transform:uppercase;border-bottom:1px solid #151b25">Match History</div>' +
+      histRows + '</div>' : '') +
+ 
+    '</div>';
+}
+ 
+// ═══════════════════════════════════════════════════
+// EVENT DELEGATION ADDITIONS
+// ═══════════════════════════════════════════════════
+// Add these cases to your existing event delegation handler:
+ 
+/*
+document.addEventListener('input', function(e) {
+  var el = e.target;
+  if (el.dataset.action === 'simSlider' || el.dataset.action === 'simSetting') {
+    handleSimSettingChange(el);
+  }
+});
+ 
+document.addEventListener('change', function(e) {
+  var el = e.target;
+  if (el.dataset.action === 'simSetting') {
+    handleSimSettingChange(el);
+  }
+});
+ 
+document.addEventListener('click', function(e) {
+  var el = e.target.closest('[data-action]');
+  if (!el) return;
+  var action = el.dataset.action;
+ 
+  if (action === 'simToggle') {
+    handleSimToggle(el.dataset.toggle);
+  }
+  else if (action === 'submitPrediction') {
+    handlePredictionSubmit();
+  }
+  else if (action === 'resetPrediction') {
+    resetPrediction();
+  }
+  else if (action === 'resetMatch') {
+    state.match = null;
+    state.evs = [];
+    state.score = { h: 0, a: 0 };
+    state.playing = false;
+    state.fin = false;
+    state.prediction.submitted = false;
+    state.prediction.h = '';
+    state.prediction.a = '';
+    state.prediction.lastMsg = '';
+    render();
+  }
+  else if (action === 'kickoff') {
+    doKickOff();
+  }
+});
+*/
+
 // ═══════════════════════════════════════════════════
 // MONTE CARLO TAB (WITH COMPARISON)
 // ═══════════════════════════════════════════════════
