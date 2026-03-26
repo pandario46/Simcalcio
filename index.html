@@ -791,6 +791,20 @@ function doRunIn(){
  
 function renderRunIn(){
   var sim=state.sim,ran=state.ran;
+  function renderSimulator() {
+  var hT = TEAMS.find(function(t) { return t.abbr === state.home; });
+  var aT = TEAMS.find(function(t) { return t.abbr === state.away; });
+  var hM = getMomentum(hT.form), aM = getMomentum(aT.form);
+  var ss = state.sim, pr = state.pred;
+ 
+  // ── Safe defaults if state.sim got corrupted ──
+  if (!ss) { ss = state.sim = { homeRotation:0, awayRotation:0, homeFormation:'default', awayFormation:'default', homeMorale:50, awayMorale:50, weather:'clear', homeAdvantage:true, refStrictness:50, rivalry:false }; }
+  if (!pr) { pr = state.pred = { h:'', a:'', locked:false, coins:0, streak:0, correct:0, attempts:0, lastMsg:'', lastReward:0, lastPH:'', lastPA:'' }; }
+  if (!SIM_FORMATIONS[ss.homeFormation]) ss.homeFormation = 'default';
+  if (!SIM_FORMATIONS[ss.awayFormation]) ss.awayFormation = 'default';
+  if (!SIM_WEATHER[ss.weather]) ss.weather = 'clear';
+ 
+  // ... rest of renderSimulator continues unchanged
   var cards=TOP6.map(function(t){var proj=ran&&sim[t.abbr]?t.pts+sim[t.abbr][sim[t.abbr].length-1].cum:null;var inj=INJURIES[t.abbr];
     return'<div style="background:#0c1018;border:1px solid #181e28;padding:12px 14px;border-top:2px solid '+t.color+'">'
       +'<div style="font-size:0.58rem;color:#555;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:3px">Current</div>'
