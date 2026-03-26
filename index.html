@@ -869,10 +869,9 @@ function renderTactics(){
   return'<div><div style="font-family:Georgia,serif;font-size:1.25rem;font-weight:700;margin-bottom:16px">Tactical Analysis</div><div style="background:#0c1018;border:1px solid #181e28;padding:14px 16px;margin-bottom:12px"><div style="font-size:0.58rem;color:#c9a84c;letter-spacing:0.14em;text-transform:uppercase;margin-bottom:10px">PPDA League Table</div>'+ppda_rows+'</div><div style="background:#0c1018;border:1px solid #181e28;padding:14px 16px"><div style="font-size:0.58rem;color:#c9a84c;letter-spacing:0.14em;text-transform:uppercase;margin-bottom:10px">Block Matchup Matrix</div>'+matrixHeader+matrixRows+'</div></div>';
 }
 // ═══════════════════════════════════════════════════
-// SIMULATOR TAB — ENHANCED (FIXED v2)
+// SIMULATOR TAB — ENHANCED (FIXED v3)
 // ═══════════════════════════════════════════════════
  
-// ── Init extra state once ──
 if (!state.sim) {
   state.sim = {
     homeRotation: 0, awayRotation: 0,
@@ -911,38 +910,48 @@ function buildSelect(id, val) {
     }).join('') + '</select>';
 }
  
-// ── Compute a single goal adjustment number for one side ──
 function simGoalAdj(side) {
   var s = state.sim;
-  var rot   = side === 'h' ? s.homeRotation : s.awayRotation;
-  var form  = SIM_FORMATIONS[side === 'h' ? s.homeFormation : s.awayFormation] || SIM_FORMATIONS['default'];
+  var rot = side === 'h' ? s.homeRotation : s.awayRotation;
+  var form = SIM_FORMATIONS[side === 'h' ? s.homeFormation : s.awayFormation] || SIM_FORMATIONS['default'];
   var oForm = SIM_FORMATIONS[side === 'h' ? s.awayFormation : s.homeFormation] || SIM_FORMATIONS['default'];
   var morale = side === 'h' ? s.homeMorale : s.awayMorale;
   var w = SIM_WEATHER[s.weather] || SIM_WEATHER['clear'];
- 
   var adj = 0;
-  adj -= (rot / 100) * 1.2;               // rotation penalty
-  adj += form.atk * 3;                     // own formation attack
-  adj -= oForm.def * 2.5;                  // opponent formation defense
-  adj += ((morale - 50) / 50) * 0.5;      // morale
-  if (side === 'h' && s.homeAdvantage) adj += 0.3;  // home boost
-  if (s.rivalry) adj += 0.25;              // derby chaos
-  if (Math.random() < w.chaos) adj += (Math.random() < 0.5 ? 1 : -1); // weather chaos
+  adj -= (rot / 100) * 1.2;
+  adj += form.atk * 3;
+  adj -= oForm.def * 2.5;
+  adj += ((morale - 50) / 50) * 0.5;
+  if (side === 'h' && s.homeAdvantage) adj += 0.3;
+  if (s.rivalry) adj += 0.25;
+  if (Math.random() < w.chaos) adj += (Math.random() < 0.5 ? 1 : -1);
   return adj;
 }
  
-// ── Rebuild the match with adjusted goals, keeping original h2h structure ──
+function pickPlayer(abbr) {
+  var roster = PL[abbr];
+  if (!roster || roster.length === 0) return 'Unknown';
+  // slice(1) skips goalkeeper for goal scorers
+  var outfield = roster.slice(1);
+  if (outfield.length === 0) return roster[0];
+  return outfield[Math.floor(Math.random() * outfield.length)];
+}
+ 
+function pickAnyPlayer(abbr) {
+  var roster = PL[abbr];
+  if (!roster || roster.length === 0) return 'Unknown';
+  return roster[Math.floor(Math.random() * roster.length)];
+}
+ 
 function buildAdjustedMatch(ha, aa, hGAdj, aGAdj) {
   var hT = TEAMS.find(function(t) { return t.abbr === ha; });
   var aT = TEAMS.find(function(t) { return t.abbr === aa; });
   var dc = dcAnalyse(ha, aa);
- 
-  // Sample original score from DC model
   var score = dcSample(dc.matrix);
   var hG = Math.max(0, Math.round(score.h + hGAdj));
   var aG = Math.max(0, Math.round(score.a + aGAdj));
  
-  // Build minutes pool
+  // Build minute pool
   var mins = []; for (var i = 1; i <= 90; i++) mins.push(i);
   mins.sort(function() { return Math.random() - 0.5; });
  
@@ -955,45 +964,63 @@ function buildAdjustedMatch(ha, aa, hGAdj, aGAdj) {
   for (var k = 0; k < aG; k++) sides.push('A');
   sides.sort(function() { return Math.random() - 0.5; });
  
-  // Build goal events using real player rosters
+  // Goal events with real player names from PL
   var hs = 0, as2 = 0;
   var evs = goalMins.map(function(min, idx) {
     var isH = sides[idx] === 'H';
     if (isH) hs++; else as2++;
     var ab = isH ? ha : aa;
-    var ro = PL[ab] ? PL[ab].slice(1) : ['Unknown'];
-    return { min: min, type: 'goal', team: ab, scorer: ro[Math.floor(Math.random() * ro.length)], hS: hs, aS: as2 };
+    return {
+      min: min, type: 'goal', side: isH ? 'h' : 'a',
+      team: ab, scorer: pickPlayer(ab),
+      hS: hs, aS: as2
+    };
   });
  
-  // Card events — adjusted by ref strictness
-  var cardMult = 1 + ((state.sim.refStrictness - 50) / 50) * 0.8; // 0.6x to 1.8x
+  // Card events with real player names, adjusted by ref strictness
+  var cardMult = 1 + ((state.sim.refStrictness - 50) / 50) * 0.8;
   var numCards = Math.max(0, Math.floor((Math.floor(Math.random() * 4) + 1) * cardMult));
+  // Extra cards in rivalries
+  if (state.sim.rivalry) numCards += Math.floor(Math.random() * 3);
   var cMins = mins.slice(totalGoals, totalGoals + numCards).sort(function(a, b) { return a - b; });
   cMins.forEach(function(min) {
-    evs.push({ min: min, type: 'yellow', team: Math.random() > 0.5 ? ha : aa });
+    var cardTeam = Math.random() > 0.5 ? ha : aa;
+    evs.push({
+      min: min, type: 'yellow',
+      team: cardTeam,
+      player: pickAnyPlayer(cardTeam)
+    });
   });
  
   evs.sort(function(a, b) { return a.min - b.min; });
  
-  // Build metadata same as original h2h
+  // Metadata (same as original h2h)
   var hS20 = STATS20.find(function(x) { return x.abbr === ha; }) || {};
   var aS20 = STATS20.find(function(x) { return x.abbr === aa; }) || {};
   var pressNote = (hS20.ppda && aS20.ppda) ?
     (hS20.ppda < 9 ? 'High press' : hS20.ppda < 12 ? 'Med press' : 'Low block') + ' (' + hS20.ppda + ') vs ' +
     (aS20.ppda < 9 ? 'High press' : aS20.ppda < 12 ? 'Med press' : 'Low block') + ' (' + aS20.ppda + ')' : '';
- 
   var o = dc.outcomes;
+ 
+  // Formation label
+  var hForm = SIM_FORMATIONS[state.sim.homeFormation] || SIM_FORMATIONS['default'];
+  var aForm = SIM_FORMATIONS[state.sim.awayFormation] || SIM_FORMATIONS['default'];
+  var tacticLabel = '';
+  if (hForm.label !== 'Default' || aForm.label !== 'Default') {
+    tacticLabel = (hForm.label !== 'Default' ? hForm.label : 'Default') + ' vs ' + (aForm.label !== 'Default' ? aForm.label : 'Default');
+  } else {
+    tacticLabel = (dc.muH && dc.muH.label) || pressNote;
+  }
  
   return {
     hG: hG, aG: aG, evs: evs,
     hW: Math.round(o.homeWin * 100), dP: Math.round(o.draw * 100), aW: Math.round(o.awayWin * 100),
-    topScores: dc.topScores, tacticLabel: (dc.muH && dc.muH.label) || pressNote, pressNote: pressNote,
+    topScores: dc.topScores, tacticLabel: tacticLabel, pressNote: pressNote,
     hBk: dc.hTD.bk, aBk: dc.aTD.bk, hBlock: dc.hTD.block || '', aBlock: dc.aTD.block || '',
     hS20: hS20, aS20: aS20, hTeam: hT, aTeam: aT, rho: dc.rho, hL: dc.hL, aL: dc.aL, matrix: dc.matrix
   };
 }
  
-// ── Prediction check ──
 function checkPred(actualH, actualA) {
   var p = state.pred;
   if (!p.locked) return;
@@ -1003,25 +1030,19 @@ function checkPred(actualH, actualA) {
   var exact = (pH === actualH && pA === actualA);
   var gdMatch = ((pH - pA) === (actualH - actualA));
   var resultMatch = ((pH > pA && actualH > actualA) || (pH < pA && actualH < actualA) || (pH === pA && actualH === actualA));
- 
   var reward = 0;
   if (exact) { reward = 50; p.streak++; p.correct++; p.lastMsg = '\uD83C\uDFAF EXACT SCORE! +50 coins!'; }
   else if (gdMatch) { reward = 25; p.streak++; p.correct++; p.lastMsg = '\uD83D\uDCD0 Correct goal difference! +25 coins!'; }
   else if (resultMatch) { reward = 10; p.correct++; p.lastMsg = '\u2705 Correct result! +10 coins!'; }
   else { p.streak = 0; p.lastMsg = '\u274C Wrong prediction'; }
- 
   if (p.streak >= 3) { var sb = p.streak * 5; reward += sb; p.lastMsg += ' \uD83D\uDD25 Streak x' + p.streak + ' (+' + sb + ')'; }
-  p.coins += reward;
-  p.lastReward = reward;
-  p.lastPH = pH; p.lastPA = pA;
+  p.coins += reward; p.lastReward = reward; p.lastPH = pH; p.lastPA = pA;
 }
  
-// ── Kick Off ──
 function doKickOff() {
   if (state.home === state.away || state.playing) return;
   if (playInterval) { clearInterval(playInterval); playInterval = null; }
  
-  // Build match with adjustments baked in
   var hAdj = simGoalAdj('h');
   var aAdj = simGoalAdj('a');
   var m = buildAdjustedMatch(state.home, state.away, hAdj, aAdj);
@@ -1049,29 +1070,43 @@ function doKickOff() {
     var feed = document.getElementById('feed'); var sc = document.getElementById('ls');
     if (sc) sc.textContent = state.score.h + ' - ' + state.score.a;
     if (feed) {
-      feed.innerHTML = state.evs.map(function(ev) {
-        return '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:' +
-          (ev.type === 'goal' ? 'rgba(201,168,76,0.06)' : '#0c1018') + ';border:1px solid ' +
-          (ev.type === 'goal' ? '#c9a84c22' : '#12161c') + ';margin-bottom:2px"><span>' +
-          (ev.type === 'goal' ? '\u26BD' : '\uD83D\uDFE8') + '</span><span style="font-size:0.75rem">' +
-          esc(ev.type === 'goal' ? ev.scorer + ' (' + ev.min + "'" + ')' : ev.team + ' (' + ev.min + "'" + ')') +
-          '</span></div>';
+      feed.innerHTML = state.evs.map(function(e) {
+        if (e.type === 'goal') {
+          return '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:rgba(201,168,76,0.06);border:1px solid #c9a84c22;margin-bottom:2px;border-radius:3px">' +
+            '<span>\u26BD</span>' +
+            '<span style="font-size:0.65rem;color:#555">' + e.min + "'" + '</span>' +
+            '<span style="font-size:0.75rem;color:#e0d6c2">' + esc(e.scorer) + '</span>' +
+            '<span style="margin-left:auto;font-size:0.6rem;color:#c9a84c;font-weight:700">' + e.hS + '-' + e.aS + '</span></div>';
+        } else {
+          return '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:#0c1018;border:1px solid #12161c;margin-bottom:2px;border-radius:3px">' +
+            '<span>\uD83D\uDFE8</span>' +
+            '<span style="font-size:0.65rem;color:#555">' + e.min + "'" + '</span>' +
+            '<span style="font-size:0.75rem;color:#bba85e">' + esc(e.player || e.team) + '</span>' +
+            '<span style="margin-left:auto;font-size:0.5rem;color:#555">' + esc(e.team) + '</span></div>';
+        }
       }).join('');
       feed.scrollTop = feed.scrollHeight;
     }
   }, 850);
 }
  
-// ── UI Builders ──
+// ── Slider (clean native range) ──
 function simSlider(id, val, label) {
+  var pct = val;
   var col = val > 66 ? '#ff1744' : val > 33 ? '#ffd740' : '#00e676';
-  return '<div style="margin-bottom:8px">' +
-    '<div style="display:flex;justify-content:space-between;margin-bottom:2px">' +
+  return '<div style="margin-bottom:10px" class="sim-slider-wrap">' +
+    '<div style="display:flex;justify-content:space-between;margin-bottom:3px">' +
     '<span style="font-size:0.52rem;color:#666;text-transform:uppercase;letter-spacing:0.05em">' + label + '</span>' +
-    '<span style="font-size:0.58rem;color:' + col + ';font-weight:600">' + val + '</span></div>' +
+    '<span class="sim-slider-val" style="font-size:0.58rem;color:' + col + ';font-weight:600">' + val + '</span></div>' +
     '<input type="range" min="0" max="100" value="' + val + '" id="' + id + '" data-action="simSlider" ' +
-    'style="width:100%;height:4px;-webkit-appearance:none;appearance:none;background:linear-gradient(90deg,' + col + ' ' + val + '%,#1a1f2e ' + val + '%);border-radius:3px;outline:none;cursor:pointer">' +
-    '</div>';
+    'style="width:100%;height:20px;-webkit-appearance:none;appearance:none;background:transparent;outline:none;cursor:pointer;margin:0;padding:0">' +
+    '<style>' +
+    '#' + id + '::-webkit-slider-runnable-track{height:6px;border-radius:3px;background:linear-gradient(90deg,' + col + ' ' + pct + '%,#1a1f2e ' + pct + '%)}' +
+    '#' + id + '::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:' + col + ';border:2px solid #0a0e14;margin-top:-5px;cursor:grab;box-shadow:0 0 4px ' + col + '66}' +
+    '#' + id + '::-moz-range-track{height:6px;border-radius:3px;background:#1a1f2e}' +
+    '#' + id + '::-moz-range-progress{height:6px;border-radius:3px;background:' + col + '}' +
+    '#' + id + '::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:' + col + ';border:2px solid #0a0e14;cursor:grab}' +
+    '</style></div>';
 }
  
 function simFormSelect(id, val) {
@@ -1088,7 +1123,6 @@ function simWeatherSelect() {
     }).join('') + '</select>';
 }
  
-// ── Main Render ──
 function renderSimulator() {
   var hT = TEAMS.find(function(t) { return t.abbr === state.home; });
   var aT = TEAMS.find(function(t) { return t.abbr === state.away; });
@@ -1106,7 +1140,7 @@ function renderSimulator() {
         (s20.ppda ? '<div style="display:flex;gap:8px;flex-wrap:wrap"><span style="font-size:0.56rem;color:#555">PPDA <span style="color:' + ppda_col + '">' + s20.ppda + '</span></span><span style="font-size:0.56rem;color:#555">xG <span style="color:#69f0ae">' + s20.xg + '</span></span><span style="font-size:0.56rem;color:#555">xGA <span style="color:#ffd740">' + s20.xga + '</span></span></div>' : '') + '</div>';
     }).join('') + '</div>';
  
-  // Pre-match probabilities
+  // Probabilities
   var preProbs = '';
   if (!state.match && hT.abbr !== aT.abbr) {
     var dc = dcAnalyse(state.home, state.away); var o = dc.outcomes; var topS = dc.topScores.slice(0, 3);
@@ -1118,7 +1152,7 @@ function renderSimulator() {
       topS.map(function(s) { return '<span style="font-size:0.72rem;color:#c9a84c;font-weight:600">' + s.h + '-' + s.a + '</span><span style="font-size:0.54rem;color:#555"> (' + (s.p * 100).toFixed(1) + '%)</span>'; }).join(' \u00A0 ') + '</div>';
   }
  
-  // Settings panel — only when not playing and not finished
+  // Settings panel
   var settingsPanel = '';
   if (!state.playing && !state.fin) {
     var hF = SIM_FORMATIONS[ss.homeFormation] || SIM_FORMATIONS['default'];
@@ -1130,7 +1164,6 @@ function renderSimulator() {
  
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">' +
  
-      // Home column
       '<div style="background:#0c1018;border:1px solid #151b25;padding:8px;border-radius:3px">' +
       '<div style="font-size:0.55rem;color:#c9a84c;margin-bottom:6px">' + esc(hT.name) + '</div>' +
       '<div style="font-size:0.48rem;color:#555;margin-bottom:2px">Formation</div>' +
@@ -1141,7 +1174,6 @@ function renderSimulator() {
       simSlider('sim_homeMorale', ss.homeMorale, '\uD83D\uDCAA Morale') +
       '</div>' +
  
-      // Away column
       '<div style="background:#0c1018;border:1px solid #151b25;padding:8px;border-radius:3px">' +
       '<div style="font-size:0.55rem;color:#c9a84c;margin-bottom:6px">' + esc(aT.name) + '</div>' +
       '<div style="font-size:0.48rem;color:#555;margin-bottom:2px">Formation</div>' +
@@ -1154,29 +1186,24 @@ function renderSimulator() {
  
       '</div>' +
  
-      // Global settings row
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px">' +
       '<div style="background:#0c1018;border:1px solid #151b25;padding:8px;border-radius:3px">' +
       '<div style="font-size:0.48rem;color:#555;margin-bottom:2px">Weather</div>' +
       simWeatherSelect() +
-      '<div style="font-size:0.42rem;color:#444;margin-top:3px">Chaos factor: ' + (wInfo.chaos * 100).toFixed(0) + '%</div>' +
-      '</div>' +
+      '<div style="font-size:0.42rem;color:#444;margin-top:3px">Chaos: ' + (wInfo.chaos * 100).toFixed(0) + '%</div></div>' +
       '<div style="background:#0c1018;border:1px solid #151b25;padding:8px;border-radius:3px">' +
       simSlider('sim_refStrictness', ss.refStrictness, '\uD83D\uDFE8 Ref Strictness') +
       '</div></div>' +
  
-      // Toggles
       '<div style="display:flex;gap:16px;padding:4px 0">' +
       '<label style="display:flex;align-items:center;gap:6px;font-size:0.55rem;color:#666;cursor:pointer">' +
       '<input type="checkbox" id="sim_homeAdv" data-action="simCheck"' + (ss.homeAdvantage ? ' checked' : '') + ' style="accent-color:#c9a84c"> \uD83C\uDFDF\uFE0F Home Advantage</label>' +
       '<label style="display:flex;align-items:center;gap:6px;font-size:0.55rem;color:#666;cursor:pointer">' +
-      '<input type="checkbox" id="sim_rivalry" data-action="simCheck"' + (ss.rivalry ? ' checked' : '') + ' style="accent-color:#ff1744"> \uD83D\uDD25 Derby Match</label>' +
-      '</div>' +
- 
-      '</div>';
+      '<input type="checkbox" id="sim_rivalry" data-action="simCheck"' + (ss.rivalry ? ' checked' : '') + ' style="accent-color:#ff1744"> \uD83D\uDD25 Derby</label>' +
+      '</div></div>';
   }
  
-  // Prediction panel — pre-match only, different teams
+  // Prediction panel
   var predPanel = '';
   if (!state.playing && !state.fin && hT.abbr !== aT.abbr) {
     predPanel = '<div style="background:#080c12;border:1px solid #c9a84c22;padding:12px;margin-bottom:12px;border-radius:4px">' +
@@ -1211,7 +1238,7 @@ function renderSimulator() {
       '<span>Played: ' + pr.attempts + '</span></div></div>';
   }
  
-  // Prediction result — after full time
+  // Prediction result
   var predResult = '';
   if (state.fin && pr.lastMsg) {
     var bc = pr.lastReward >= 50 ? '#00e676' : pr.lastReward > 0 ? '#ffd740' : '#ff1744';
@@ -1221,12 +1248,11 @@ function renderSimulator() {
       '<div style="font-size:0.6rem;color:#c9a84c;margin-top:3px">Balance: \uD83E\uDE99 ' + pr.coins + '</div></div>';
   }
  
-  // Match area (live / full time)
+  // Match area
   var matchArea = '';
   if (state.match) {
     var topScoreInfo = state.match.topScores ? '<div style="display:flex;gap:8px;justify-content:center;margin-top:6px;flex-wrap:wrap">' + state.match.topScores.slice(0, 4).map(function(s) { var isActual = s.h === state.match.hG && s.a === state.match.aG; return '<span style="font-size:0.6rem;padding:2px 6px;background:' + (isActual ? 'rgba(201,168,76,0.2)' : 'transparent') + ';color:' + (isActual ? '#c9a84c' : '#555') + ';border:1px solid ' + (isActual ? '#c9a84c' : '#222') + ';border-radius:2px">' + s.h + '-' + s.a + ' (' + (s.p * 100).toFixed(1) + '%)</span>'; }).join('') + '</div>' : '';
  
-    // Show active modifier badges during/after match
     var badges = [];
     if (ss.homeFormation !== 'default') badges.push(SIM_FORMATIONS[ss.homeFormation].label + ' (H)');
     if (ss.awayFormation !== 'default') badges.push(SIM_FORMATIONS[ss.awayFormation].label + ' (A)');
@@ -1257,7 +1283,6 @@ function renderSimulator() {
   }
   btnArea += '</div>';
  
-  // Assemble
   return '<div><div style="font-family:Georgia,serif;font-size:1.25rem;font-weight:700;margin-bottom:16px">H2H Simulator</div>' +
     '<div style="display:grid;grid-template-columns:1fr 40px 1fr;gap:8px;align-items:end;margin-bottom:12px"><div>' + buildSelect('sh', state.home) + '</div><div style="text-align:center;font-size:0.7rem;color:#555;padding-bottom:10px">vs</div><div>' + buildSelect('sa', state.away) + '</div></div>' +
     teamCards + preProbs + settingsPanel + predPanel + predResult + btnArea + matchArea +
@@ -1415,9 +1440,9 @@ document.addEventListener('click', function(e) {
       if (ac === 'kickoff') { if (!el.disabled) doKickOff(); return; }
       if (ac.indexOf('tab-') === 0) { setTab(ac.slice(4)); return; }
       if (ac === 'lockPred') {
-        var ph = document.getElementById('pred_h'), pa = document.getElementById('pred_a');
-        if (ph && pa && ph.value !== '' && pa.value !== '') {
-          state.pred.h = ph.value; state.pred.a = pa.value;
+        var ph2 = document.getElementById('pred_h'), pa2 = document.getElementById('pred_a');
+        if (ph2 && pa2 && ph2.value !== '' && pa2.value !== '') {
+          state.pred.h = ph2.value; state.pred.a = pa2.value;
           state.pred.locked = true; state.pred.lastMsg = '';
         }
         render(); return;
@@ -1458,41 +1483,51 @@ document.addEventListener('change', function(e) {
       render();
     }
     if (ac === 'simSetting') {
-      var id = el.id;
-      if (id === 'sim_homeFormation') state.sim.homeFormation = el.value;
-      else if (id === 'sim_awayFormation') state.sim.awayFormation = el.value;
-      else if (id === 'sim_weather') state.sim.weather = el.value;
+      if (el.id === 'sim_homeFormation') state.sim.homeFormation = el.value;
+      else if (el.id === 'sim_awayFormation') state.sim.awayFormation = el.value;
+      else if (el.id === 'sim_weather') state.sim.weather = el.value;
       render();
     }
     if (ac === 'simCheck') {
       if (el.id === 'sim_homeAdv') state.sim.homeAdvantage = el.checked;
       if (el.id === 'sim_rivalry') state.sim.rivalry = el.checked;
     }
+    // Sliders: only update state + full render on RELEASE (change event)
+    if (ac === 'simSlider') {
+      var v2 = parseInt(el.value, 10);
+      if (el.id === 'sim_homeRotation') state.sim.homeRotation = v2;
+      else if (el.id === 'sim_awayRotation') state.sim.awayRotation = v2;
+      else if (el.id === 'sim_homeMorale') state.sim.homeMorale = v2;
+      else if (el.id === 'sim_awayMorale') state.sim.awayMorale = v2;
+      else if (el.id === 'sim_refStrictness') state.sim.refStrictness = v2;
+      render();
+    }
   }
 });
  
+// Sliders: live visual update ONLY (no render, no DOM rebuild) while dragging
 document.addEventListener('input', function(e) {
   var el = e.target;
   if (!el || !el.getAttribute) return;
   var ac = el.getAttribute('data-action');
+ 
   if (ac === 'simSlider') {
     var v = parseInt(el.value, 10);
-    if (el.id === 'sim_homeRotation') state.sim.homeRotation = v;
-    else if (el.id === 'sim_awayRotation') state.sim.awayRotation = v;
-    else if (el.id === 'sim_homeMorale') state.sim.homeMorale = v;
-    else if (el.id === 'sim_awayMorale') state.sim.awayMorale = v;
-    else if (el.id === 'sim_refStrictness') state.sim.refStrictness = v;
-    // Update just the value display without full re-render (prevents slider jump)
-    var valSpan = el.parentNode.querySelector('span:last-child');
-    if (valSpan) {
-      var col = v > 66 ? '#ff1744' : v > 33 ? '#ffd740' : '#00e676';
-      valSpan.textContent = v;
-      valSpan.style.color = col;
+    var col = v > 66 ? '#ff1744' : v > 33 ? '#ffd740' : '#00e676';
+ 
+    // Update the value number display
+    var wrap = el.closest('.sim-slider-wrap');
+    if (wrap) {
+      var valEl = wrap.querySelector('.sim-slider-val');
+      if (valEl) { valEl.textContent = v; valEl.style.color = col; }
     }
-    // Update the gradient fill
-    var gcol = v > 66 ? '#ff1744' : v > 33 ? '#ffd740' : '#00e676';
-    el.style.background = 'linear-gradient(90deg,' + gcol + ' ' + v + '%,#1a1f2e ' + v + '%)';
+ 
+    // Update slider track gradient
+    el.style.background = '';
+    var styleEl = el.nextElementSibling;
+    // Just let the browser handle the native thumb position — gradient updates on change+render
   }
+ 
   if (ac === 'predInput') {
     if (el.id === 'pred_h') state.pred.h = el.value;
     if (el.id === 'pred_a') state.pred.a = el.value;
