@@ -951,76 +951,77 @@ function buildAdjustedMatch(ha, aa, hGAdj, aGAdj) {
   var hG = Math.max(0, Math.round(score.h + hGAdj));
   var aG = Math.max(0, Math.round(score.a + aGAdj));
  
-  // Build minute pool
   var mins = []; for (var i = 1; i <= 90; i++) mins.push(i);
   mins.sort(function() { return Math.random() - 0.5; });
  
   var totalGoals = hG + aG;
   var goalMins = mins.slice(0, totalGoals).sort(function(a, b) { return a - b; });
  
-  // Build sides array
   var sides = [];
   for (var j = 0; j < hG; j++) sides.push('H');
   for (var k = 0; k < aG; k++) sides.push('A');
   sides.sort(function() { return Math.random() - 0.5; });
  
-  // Goal events with real player names from PL
+  // Goal events with real player names
   var hs = 0, as2 = 0;
   var evs = goalMins.map(function(min, idx) {
     var isH = sides[idx] === 'H';
     if (isH) hs++; else as2++;
     var ab = isH ? ha : aa;
+    var ro = PL[ab] ? PL[ab].slice(1) : ['Unknown'];
     return {
-      min: min, type: 'goal', side: isH ? 'h' : 'a',
-      team: ab, scorer: pickPlayer(ab),
+      min: min, type: 'goal', team: ab,
+      scorer: ro[Math.floor(Math.random() * ro.length)],
       hS: hs, aS: as2
     };
   });
  
-  // Card events with real player names, adjusted by ref strictness
+  // Card events with real player names
   var cardMult = 1 + ((state.sim.refStrictness - 50) / 50) * 0.8;
   var numCards = Math.max(0, Math.floor((Math.floor(Math.random() * 4) + 1) * cardMult));
-  // Extra cards in rivalries
   if (state.sim.rivalry) numCards += Math.floor(Math.random() * 3);
   var cMins = mins.slice(totalGoals, totalGoals + numCards).sort(function(a, b) { return a - b; });
   cMins.forEach(function(min) {
     var cardTeam = Math.random() > 0.5 ? ha : aa;
+    var roster = PL[cardTeam] || ['Unknown'];
     evs.push({
-      min: min, type: 'yellow',
-      team: cardTeam,
-      player: pickAnyPlayer(cardTeam)
+      min: min, type: 'yellow', team: cardTeam,
+      player: roster[Math.floor(Math.random() * roster.length)]
     });
   });
  
   evs.sort(function(a, b) { return a.min - b.min; });
  
-  // Metadata (same as original h2h)
+  // Metadata — same as original h2h
   var hS20 = STATS20.find(function(x) { return x.abbr === ha; }) || {};
   var aS20 = STATS20.find(function(x) { return x.abbr === aa; }) || {};
   var pressNote = (hS20.ppda && aS20.ppda) ?
     (hS20.ppda < 9 ? 'High press' : hS20.ppda < 12 ? 'Med press' : 'Low block') + ' (' + hS20.ppda + ') vs ' +
     (aS20.ppda < 9 ? 'High press' : aS20.ppda < 12 ? 'Med press' : 'Low block') + ' (' + aS20.ppda + ')' : '';
+ 
   var o = dc.outcomes;
  
-  // Formation label
+  // Tactic label from formations
   var hForm = SIM_FORMATIONS[state.sim.homeFormation] || SIM_FORMATIONS['default'];
   var aForm = SIM_FORMATIONS[state.sim.awayFormation] || SIM_FORMATIONS['default'];
-  var tacticLabel = '';
+  var tacticLabel = pressNote;
   if (hForm.label !== 'Default' || aForm.label !== 'Default') {
-    tacticLabel = (hForm.label !== 'Default' ? hForm.label : 'Default') + ' vs ' + (aForm.label !== 'Default' ? aForm.label : 'Default');
-  } else {
-    tacticLabel = (dc.muH && dc.muH.label) || pressNote;
+    tacticLabel = (hForm.label !== 'Default' ? hForm.label : 'Default') + ' vs ' +
+      (aForm.label !== 'Default' ? aForm.label : 'Default');
   }
  
   return {
     hG: hG, aG: aG, evs: evs,
     hW: Math.round(o.homeWin * 100), dP: Math.round(o.draw * 100), aW: Math.round(o.awayWin * 100),
-    topScores: dc.topScores, tacticLabel: tacticLabel, pressNote: pressNote,
-    hBk: dc.hTD.bk, aBk: dc.aTD.bk, hBlock: dc.hTD.block || '', aBlock: dc.aTD.block || '',
-    hS20: hS20, aS20: aS20, hTeam: hT, aTeam: aT, rho: dc.rho, hL: dc.hL, aL: dc.aL, matrix: dc.matrix
+    topScores: dc.topScores || [],
+    tacticLabel: tacticLabel || '',
+    pressNote: pressNote || '',
+    hBk: dc.hTD ? dc.hTD.bk : '', aBk: dc.aTD ? dc.aTD.bk : '',
+    hBlock: (dc.hTD && dc.hTD.block) || '', aBlock: (dc.aTD && dc.aTD.block) || '',
+    hS20: hS20, aS20: aS20, hTeam: hT, aTeam: aT,
+    rho: dc.rho, hL: dc.hL, aL: dc.aL, matrix: dc.matrix
   };
 }
- 
 function checkPred(actualH, actualA) {
   var p = state.pred;
   if (!p.locked) return;
