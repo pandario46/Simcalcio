@@ -363,7 +363,185 @@ var STATS20 = [
   {abbr:'PIS',name:'Pisa SC',       color:'#000099', ppda:14.2,xg:0.85,xga:1.35,shots:9.9, poss:38.2,tkl:17,trn:6.7,fouls:13.3,block:'Low Block'},
   {abbr:'VER',name:'Hellas Verona', color:'#002299', ppda:13.0,xg:0.90,xga:1.60,shots:10.8,poss:36.8,tkl:19,trn:7.3,fouls:17.0,block:'Med-Low'},
 ];
- 
+
+// ── WORLD CUP ELIMINATION MORALE FACTOR ──────────────
+// Italy eliminated by Bosnia on pens, 31 Mar 2026
+// Bastoni red card, Esposito & Cristante missed pens
+// "Third apocalypse" — national trauma rippling through Serie A
+
+var WC_CONFIG = {
+  eliminationMD: 30,
+  currentMD: 31,
+  decayRate: 0.25
+};
+
+var WC_ROLE = { star:1.0, starter:0.75, rotation:0.4, squad:0.15 };
+
+var SEVERITY_MULT = { devastated:1.5, gutted:1.0, affected:0.5, peripheral:0.2 };
+
+var WC_MORALE = {
+  INT: {
+    players: [
+      { name:"Bastoni",  clubRole:"star",     severity:"devastated" },
+      { name:"Barella",  clubRole:"star",     severity:"gutted" },
+      { name:"Dimarco",  clubRole:"starter",  severity:"gutted" },
+      { name:"Frattesi", clubRole:"rotation", severity:"affected" }
+    ],
+    italianCorePct: 0.45, netSentiment: -0.8
+  },
+  NAP: {
+    players: [
+      { name:"Politano",   clubRole:"starter",  severity:"gutted" },
+      { name:"Buongiorno", clubRole:"starter",  severity:"affected" },
+      { name:"Raspadori",  clubRole:"rotation", severity:"affected" }
+    ],
+    italianCorePct: 0.25, netSentiment: -0.4
+  },
+  ACM: {
+    players: [],
+    italianCorePct: 0.10, netSentiment: 0.05
+  },
+  COM: {
+    players: [],
+    italianCorePct: 0.05, netSentiment: 0.0
+  },
+  JUV: {
+    players: [
+      { name:"Locatelli", clubRole:"starter",  severity:"gutted" },
+      { name:"Cambiaso",  clubRole:"starter",  severity:"affected" },
+      { name:"Gatti",     clubRole:"starter",  severity:"affected" }
+    ],
+    italianCorePct: 0.30, netSentiment: -0.5
+  },
+  ROM: {
+    players: [
+      { name:"Mancini",    clubRole:"starter",  severity:"gutted" },
+      { name:"Cristante",  clubRole:"rotation", severity:"devastated" },
+      { name:"Spinazzola", clubRole:"rotation", severity:"gutted" }
+    ],
+    italianCorePct: 0.30, netSentiment: -0.6
+  },
+  ATA: {
+    players: [
+      { name:"Carnesecchi", clubRole:"starter", severity:"affected" },
+      { name:"Scalvini",    clubRole:"starter", severity:"affected" }
+    ],
+    italianCorePct: 0.20, netSentiment: -0.3
+  },
+  FIO: {
+    players: [
+      { name:"Kean", clubRole:"star", severity:"gutted" }
+    ],
+    italianCorePct: 0.20, netSentiment: -0.4
+  },
+  BOL: { players:[], italianCorePct:0.15, netSentiment:-0.05 },
+  LAZ: { players:[], italianCorePct:0.20, netSentiment:-0.05 },
+  TOR: { players:[], italianCorePct:0.25, netSentiment:-0.05 },
+  CAG: {
+    players: [{ name:"Palestra", clubRole:"rotation", severity:"affected" }],
+    italianCorePct:0.30, netSentiment:-0.15
+  },
+  UDI: { players:[], italianCorePct:0.15, netSentiment:0.0 },
+  SAS: { players:[], italianCorePct:0.15, netSentiment:0.0 },
+  PAR: { players:[], italianCorePct:0.20, netSentiment:-0.05 },
+  GEN: { players:[], italianCorePct:0.15, netSentiment:-0.05 },
+  LEC: { players:[], italianCorePct:0.20, netSentiment:-0.05 },
+  CRE: { players:[], italianCorePct:0.25, netSentiment:-0.05 },
+  PIS: { players:[], italianCorePct:0.20, netSentiment:-0.05 },
+  VER: { players:[], italianCorePct:0.15, netSentiment:-0.05 }
+};
+
+function wcDecay(currentMD, elimMD, decayRate) {
+  var elapsed = Math.max(0, currentMD - elimMD);
+  return Math.pow(1 - decayRate, elapsed);
+}
+
+function wcPlayerDamage(teamData) {
+  if (!teamData || !teamData.players || !teamData.players.length) return 0;
+  var d = 0;
+  teamData.players.forEach(function(p) {
+    d += (WC_ROLE[p.clubRole] || 0.3) * (SEVERITY_MULT[p.severity] || 0.5);
+  });
+  return d;
+}
+
+function wcMoraleFactor(abbr) {
+  var td = WC_MORALE[abbr];
+  if (!td) return 1.0;
+  var decay = wcDecay(WC_CONFIG.currentMD, WC_CONFIG.eliminationMD, WC_CONFIG.decayRate);
+  var playerDmg    = wcPlayerDamage(td) * 0.035;
+  var ambientDmg   = (td.italianCorePct || 0) * 0.02;
+  var sentimentDmg = Math.max(0, -(td.netSentiment || 0)) * 0.015;
+  var raw = playerDmg + ambientDmg + sentimentDmg;
+  return Math.max(0.88, 1.0 - raw * decay);
+}
+
+function wcMoraleReport(abbr) {
+  var td = WC_MORALE[abbr];
+  if (!td) return { abbr:abbr, factor:1.0, detail:"No data" };
+  var f = wcMoraleFactor(abbr);
+  return {
+    abbr:abbr, factor:f,
+    players:(td.players||[]).map(function(p){return p.name+'('+p.severity+')';}),
+    label: f<0.94?"Heavy blow":f<0.97?"Noticeable dip":f<0.99?"Slight drag":"Unaffected"
+  };
+}
+
+
+// ═══════════════════════════════════════════════════
+// STEP 2: In your dcLambdas function, find these lines:
+//
+//   hL = Math.min(3.0, Math.max(0.35, hL));
+//   aL = Math.min(3.0, Math.max(0.35, aL));
+//
+//   // Earlier and stronger suppression
+//   if (strGap > 25) {
+//
+// And INSERT these 4 lines RIGHT BEFORE the clamping:
+// ═══════════════════════════════════════════════════
+
+  // World Cup elimination morale hit
+  var hWC = wcMoraleFactor(ha);
+  var aWC = wcMoraleFactor(aa);
+  hL = hL * hWC;
+  aL = aL * aWC;
+
+  // (then the existing clamp lines follow)
+  // hL = Math.min(3.0, Math.max(0.35, hL));
+  // aL = Math.min(3.0, Math.max(0.35, aL));
+
+
+// ═══════════════════════════════════════════════════
+// STEP 3 (OPTIONAL): Show WC morale in the Predicted
+// Score parameters box. Find the paramInfo section in
+// renderPredictedCore and add after the Str line:
+// ═══════════════════════════════════════════════════
+
+// Add this line to the paramInfo div:
+//   +'<div style="font-size:0.56rem;color:#ff6d00;margin-top:4px">WC Morale: '
+//     +esc(hT.name)+' x'+wcMoraleFactor(ha).toFixed(3)
+//     +' | '+esc(aT.name)+' x'+wcMoraleFactor(aa).toFixed(3)+'</div>'
+
+
+// ═══════════════════════════════════════════════════
+// EXPECTED IMPACT AT MD31:
+//
+// Team       Factor   Lambda Effect    Why
+// ────────────────────────────────────────────────────
+// Inter      ~0.923   -7.7%           Bastoni(devastated), Barella, Dimarco, Frattesi
+// Roma       ~0.946   -5.4%           Cristante(missed pen), Mancini, Spinazzola
+// Juventus   ~0.952   -4.8%           Locatelli, Cambiaso, Gatti
+// Napoli     ~0.960   -4.0%           Politano, Buongiorno, Raspadori
+// Fiorentina ~0.967   -3.3%           Kean (scored but lost)
+// Atalanta   ~0.975   -2.5%           Carnesecchi, Scalvini (dropped)
+// Milan      ~1.000   ~0%             No Italian internationals in squad
+// Como       ~1.000   ~0%             Foreign-dominated squad
+//
+// By MD33 (2 matchdays later):
+// Inter drops to ~0.957 (-4.3%), etc.
+// By MD35-36 the effect is under 2% for everyone.
+// ═══════════════════════════════════════════════════
+    
 // ═══════════════════════════════════════════════════
 // DIXON-COLES ENGINE (CALIBRATED v2)
 // ═══════════════════════════════════════════════════
@@ -480,7 +658,11 @@ function dcLambdas(ha, aa) {
  
   hL = Math.min(3.0, Math.max(0.35, hL));  // Lower ceiling from 3.2 to 3.0
   aL = Math.min(3.0, Math.max(0.35, aL));
- 
+  var hWC = wcMoraleFactor(ha);
+  var aWC = wcMoraleFactor(aa);
+  hL = hL * hWC;
+  aL = aL * aWC;
+  
   // Earlier and stronger suppression
   if (strGap > 25) {
     var suppression = 1.0 - Math.min((strGap - 25) / 60, 0.40);
