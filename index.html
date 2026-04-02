@@ -606,14 +606,6 @@ function dcLambdas(ha, aa, md) {
   var aMismatch = mismatchFactor(aS2, hS2);
   var aDefCollapse = defCollapseMultiplier(aS2);
   var hDefCollapse = defCollapseMultiplier(hS2);
-  var hS2 = hA.str || OPP[ha] || 50;
-  var aS2 = aA.str || OPP[aa] || 50;
-
-  // WC morale also penalises effective strength
-  var hWCStr = wcMoraleFactor(ha, md);
-  var aWCStr = wcMoraleFactor(aa, md);
-  if (hWCStr < 1.0) hS2 = hS2 * (0.5 + 0.5 * hWCStr);  // e.g. 0.923 → str drops ~4%
-  if (aWCStr < 1.0) aS2 = aS2 * (0.5 + 0.5 * aWCStr);
  
  // Change home/away base from 1.30/1.15 to 1.24/1.18
   var hL = 1.24 * Math.sqrt(hAtt * hDef) * strRatio * muH.gm * hMismatch * aDefCollapse;
