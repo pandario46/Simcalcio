@@ -577,6 +577,12 @@ function dcLambdas(ha, aa, md) {
   var aA = ADV[aa] || {};
   var hS2 = hA.str || OPP[ha] || 50;
   var aS2 = aA.str || OPP[aa] || 50;
+
+// WC morale penalises effective strength
+  var hWCStr = wcMoraleFactor(ha, md);
+  var aWCStr = wcMoraleFactor(aa, md);
+  if (hWCStr < 1.0) hS2 = hS2 * (0.5 + 0.5 * hWCStr);
+  if (aWCStr < 1.0) aS2 = aS2 * (0.5 + 0.5 * aWCStr);
   var hTD = TDATA[ha] || { bk:"medium" };
   var aTD = TDATA[aa] || { bk:"medium" };
   var muH = BLOCK_MU[hTD.bk + "_vs_" + aTD.bk] || { gm:1.0, label:"" };
