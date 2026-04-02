@@ -490,62 +490,7 @@ function wcMoraleReport(abbr) {
     label: f<0.94?"Heavy blow":f<0.97?"Noticeable dip":f<0.99?"Slight drag":"Unaffected"
   };
 }
-
-
-// ═══════════════════════════════════════════════════
-// STEP 2: In your dcLambdas function, find these lines:
-//
-//   hL = Math.min(3.0, Math.max(0.35, hL));
-//   aL = Math.min(3.0, Math.max(0.35, aL));
-//
-//   // Earlier and stronger suppression
-//   if (strGap > 25) {
-//
-// And INSERT these 4 lines RIGHT BEFORE the clamping:
-// ═══════════════════════════════════════════════════
-
-  // World Cup elimination morale hit
-  var hWC = wcMoraleFactor(ha);
-  var aWC = wcMoraleFactor(aa);
-  hL = hL * hWC;
-  aL = aL * aWC;
-
-  // (then the existing clamp lines follow)
-  // hL = Math.min(3.0, Math.max(0.35, hL));
-  // aL = Math.min(3.0, Math.max(0.35, aL));
-
-
-// ═══════════════════════════════════════════════════
-// STEP 3 (OPTIONAL): Show WC morale in the Predicted
-// Score parameters box. Find the paramInfo section in
-// renderPredictedCore and add after the Str line:
-// ═══════════════════════════════════════════════════
-
-// Add this line to the paramInfo div:
-//   +'<div style="font-size:0.56rem;color:#ff6d00;margin-top:4px">WC Morale: '
-//     +esc(hT.name)+' x'+wcMoraleFactor(ha).toFixed(3)
-//     +' | '+esc(aT.name)+' x'+wcMoraleFactor(aa).toFixed(3)+'</div>'
-
-
-// ═══════════════════════════════════════════════════
-// EXPECTED IMPACT AT MD31:
-//
-// Team       Factor   Lambda Effect    Why
-// ────────────────────────────────────────────────────
-// Inter      ~0.923   -7.7%           Bastoni(devastated), Barella, Dimarco, Frattesi
-// Roma       ~0.946   -5.4%           Cristante(missed pen), Mancini, Spinazzola
-// Juventus   ~0.952   -4.8%           Locatelli, Cambiaso, Gatti
-// Napoli     ~0.960   -4.0%           Politano, Buongiorno, Raspadori
-// Fiorentina ~0.967   -3.3%           Kean (scored but lost)
-// Atalanta   ~0.975   -2.5%           Carnesecchi, Scalvini (dropped)
-// Milan      ~1.000   ~0%             No Italian internationals in squad
-// Como       ~1.000   ~0%             Foreign-dominated squad
-//
-// By MD33 (2 matchdays later):
-// Inter drops to ~0.957 (-4.3%), etc.
-// By MD35-36 the effect is under 2% for everyone.
-// ═══════════════════════════════════════════════════
-    
+   
 // ═══════════════════════════════════════════════════
 // DIXON-COLES ENGINE (CALIBRATED v2)
 // ═══════════════════════════════════════════════════
