@@ -465,10 +465,14 @@ function wcPlayerDamage(teamData) {
   return d;
 }
 
-function wcMoraleFactor(abbr) {
+function wcMoraleFactor(abbr, md) {
   var td = WC_MORALE[abbr];
   if (!td) return 1.0;
-  var decay = wcDecay(WC_CONFIG.currentMD, WC_CONFIG.eliminationMD, WC_CONFIG.decayRate);
+
+  // Use passed matchday, or fall back to config
+  var currentMD = md || WC_CONFIG.currentMD;
+  var decay = wcDecay(currentMD, WC_CONFIG.eliminationMD, WC_CONFIG.decayRate);
+
   var playerDmg    = wcPlayerDamage(td) * 0.035;
   var ambientDmg   = (td.italianCorePct || 0) * 0.02;
   var sentimentDmg = Math.max(0, -(td.netSentiment || 0)) * 0.015;
@@ -623,7 +627,7 @@ function defCollapseMultiplier(oppStr) {
  
 // ── CALIBRATED LAMBDA COMPUTATION ──
  
-function dcLambdas(ha, aa) {
+function dcLambdas(ha, aa, md) {
   var hA = ADV[ha] || {};
   var aA = ADV[aa] || {};
   var hS2 = hA.str || OPP[ha] || 50;
@@ -658,8 +662,8 @@ function dcLambdas(ha, aa) {
  
   hL = Math.min(3.0, Math.max(0.35, hL));  // Lower ceiling from 3.2 to 3.0
   aL = Math.min(3.0, Math.max(0.35, aL));
-  var hWC = wcMoraleFactor(ha);
-  var aWC = wcMoraleFactor(aa);
+  var hWC = wcMoraleFactor(ha, md);
+  var aWC = wcMoraleFactor(aa, md);
   hL = hL * hWC;
   aL = aL * aWC;
   
@@ -681,8 +685,8 @@ function dcLambdas(ha, aa) {
   return { hL:hL, aL:aL, rho:rho, muH:muH, muA:muA, hTD:hTD, aTD:aTD };
 }
  
-function dcAnalyse(ha, aa) {
-  var params = dcLambdas(ha, aa);
+function dcAnalyse(ha, aa, md) {
+  var params = dcLambdas(ha, aa, md);
   var matrix = dcMatrix(params.hL, params.aL, params.rho);
   var outcomes = dcOutcomes(matrix);
   var topScores = dcTopScores(matrix, 12);
@@ -758,49 +762,99 @@ var TOP4_H2H=[
   {md:35,home:"COM",away:"NAP"},{md:38,home:"COM",away:"ROM"},
 ];
  
-function mcRun(n) {
+unction mcRun(n) {
   var titles={INT:0,NAP:0,ACM:0,COM:0,JUV:0,ROM:0};
   var clSpots={INT:0,NAP:0,ACM:0,COM:0,JUV:0,ROM:0};
   var dist={INT:[],NAP:[],ACM:[],COM:[],JUV:[],ROM:[]};
   var ties=0;
+
+  // Build cache PER MATCHDAY so WC decay works properly
   var dcCache={};
-  TOP6.forEach(function(t){if(!FX[t.abbr])return;FX[t.abbr].forEach(function(fx){
-    var ha2=fx.h?t.abbr:fx.oppAbbr,aa2=fx.h?fx.oppAbbr:t.abbr;
-    var key=ha2+'_'+aa2;if(!dcCache[key])dcCache[key]=dcAnalyse(ha2,aa2).outcomes;
-  });});
+  TOP6.forEach(function(t){
+    if(!FX[t.abbr]) return;
+    FX[t.abbr].forEach(function(fx){
+      var ha2=fx.h?t.abbr:fx.oppAbbr;
+      var aa2=fx.h?fx.oppAbbr:t.abbr;
+      var key=ha2+'_'+aa2+'_md'+fx.md;  // <-- key includes matchday
+      if(!dcCache[key]) {
+        dcCache[key]=dcAnalyse(ha2,aa2,fx.md).outcomes;  // <-- pass md
+      }
+    });
+  });
+
+  // Also cache H2H clashes with their matchday
+  var h2hCache={};
+  TOP4_H2H.forEach(function(clash){
+    var key=clash.home+'_'+clash.away+'_md'+clash.md;
+    if(!h2hCache[key]) {
+      h2hCache[key]=dcAnalyse(clash.home,clash.away,clash.md).outcomes;
+    }
+  });
+
   for(var i=0;i<n;i++){
     var pts={INT:69,NAP:62,ACM:63,COM:57,JUV:54,ROM:54};
     var h2hResults={};
+
     TOP4_H2H.forEach(function(clash){
-      var key=clash.home+'_'+clash.away;var o=dcCache[key]||dcAnalyse(clash.home,clash.away).outcomes;
-      var r=Math.random();h2hResults[key]=r<o.homeWin?'W':r<o.homeWin+o.draw?'D':'L';
+      var key=clash.home+'_'+clash.away+'_md'+clash.md;
+      var o=h2hCache[key];
+      var r=Math.random();
+      h2hResults[clash.home+'_'+clash.away]=r<o.homeWin?'W':r<o.homeWin+o.draw?'D':'L';
     });
-    TOP6.forEach(function(t){if(!FX[t.abbr])return;FX[t.abbr].forEach(function(fx){
-      var h2hKey='';TOP4_H2H.forEach(function(clash){
-        if(clash.home===t.abbr&&clash.away===fx.oppAbbr)h2hKey=clash.home+'_'+clash.away;
-        if(clash.away===t.abbr&&clash.home===fx.oppAbbr)h2hKey=clash.home+'_'+clash.away;
+
+    TOP6.forEach(function(t){
+      if(!FX[t.abbr]) return;
+      FX[t.abbr].forEach(function(fx){
+        // Check if this fixture is a tracked H2H clash
+        var h2hKey='';
+        TOP4_H2H.forEach(function(clash){
+          if(clash.home===t.abbr&&clash.away===fx.oppAbbr) h2hKey=clash.home+'_'+clash.away;
+          if(clash.away===t.abbr&&clash.home===fx.oppAbbr) h2hKey=clash.home+'_'+clash.away;
+        });
+
+        if(h2hKey){
+          var homeRes=h2hResults[h2hKey];
+          var myRes=t.abbr===h2hKey.split('_')[0]?homeRes:(homeRes==='W'?'L':homeRes==='L'?'W':'D');
+          pts[t.abbr]+=myRes==='W'?3:myRes==='D'?1:0;
+        } else {
+          var ha2=fx.h?t.abbr:fx.oppAbbr;
+          var aa2=fx.h?fx.oppAbbr:t.abbr;
+          var cacheKey=ha2+'_'+aa2+'_md'+fx.md;  // <-- matchday-aware key
+          var o=dcCache[cacheKey];
+          if(o){
+            var r2=Math.random();
+            var res=r2<o.homeWin?(fx.h?'W':'L'):r2<o.homeWin+o.draw?'D':(fx.h?'L':'W');
+            pts[t.abbr]+=res==='W'?3:res==='D'?1:0;
+          } else {
+            var p=probs(t.abbr,fx);
+            var res2=roll(p.winP,p.drawP);
+            pts[t.abbr]+=res2==='W'?3:res2==='D'?1:0;
+          }
+        }
       });
-      if(h2hKey){var homeRes=h2hResults[h2hKey];
-        var myRes=t.abbr===h2hKey.split('_')[0]?homeRes:(homeRes==='W'?'L':homeRes==='L'?'W':'D');
-        pts[t.abbr]+=myRes==='W'?3:myRes==='D'?1:0;
-      }else{
-        var ha2=fx.h?t.abbr:fx.oppAbbr,aa2=fx.h?fx.oppAbbr:t.abbr;
-        var key2=ha2+'_'+aa2;var o=dcCache[key2];
-        if(o){var r2=Math.random();var res=r2<o.homeWin?(fx.h?'W':'L'):r2<o.homeWin+o.draw?'D':(fx.h?'L':'W');
-          pts[t.abbr]+=res==='W'?3:res==='D'?1:0;
-        }else{var p=probs(t.abbr,fx);var res2=roll(p.winP,p.drawP);pts[t.abbr]+=res2==='W'?3:res2==='D'?1:0;}
-      }
-    });});
+    });
+
     TOP6.forEach(function(t){dist[t.abbr].push(pts[t.abbr]);});
-    var mx=-1;TOP6.forEach(function(t){if(pts[t.abbr]>mx)mx=pts[t.abbr];});
+    var mx=-1;
+    TOP6.forEach(function(t){if(pts[t.abbr]>mx)mx=pts[t.abbr];});
     var winners=TOP6.filter(function(t){return pts[t.abbr]===mx;});
-    if(winners.length>1)ties++;
-    var w=winners.find(function(x){return x.abbr==='INT';})||winners[0];titles[w.abbr]++;
-    var ranked=TOP6.slice().sort(function(a,b){if(pts[b.abbr]!==pts[a.abbr])return pts[b.abbr]-pts[a.abbr];return a.rank-b.rank;});
-    for(var j=0;j<4;j++)clSpots[ranked[j].abbr]++;
+    if(winners.length>1) ties++;
+    var w=winners.find(function(x){return x.abbr==='INT';})||winners[0];
+    titles[w.abbr]++;
+    var ranked=TOP6.slice().sort(function(a,b){
+      if(pts[b.abbr]!==pts[a.abbr]) return pts[b.abbr]-pts[a.abbr];
+      return a.rank-b.rank;
+    });
+    for(var j=0;j<4;j++) clSpots[ranked[j].abbr]++;
   }
+
   var avg={},mn={},mx2={};
-  TOP6.forEach(function(t){var d=dist[t.abbr];avg[t.abbr]=(d.reduce(function(a,b){return a+b;},0)/d.length).toFixed(1);mn[t.abbr]=Math.min.apply(null,d);mx2[t.abbr]=Math.max.apply(null,d);});
+  TOP6.forEach(function(t){
+    var d=dist[t.abbr];
+    avg[t.abbr]=(d.reduce(function(a,b){return a+b;},0)/d.length).toFixed(1);
+    mn[t.abbr]=Math.min.apply(null,d);
+    mx2[t.abbr]=Math.max.apply(null,d);
+  });
   return{titles:titles,clSpots:clSpots,n:n,ties:ties,avg:avg,mn:mn,mx:mx2};
 }
  
