@@ -59,12 +59,16 @@ return null;
 
 var SESSION_ID = (function() {
 var key = ‘calcio_session’;
+try {
 var id = localStorage.getItem(key);
 if (!id) {
 id = ‘sess_’ + Math.random().toString(36).slice(2) + Date.now().toString(36);
 localStorage.setItem(key, id);
 }
 return id;
+} catch(e) {
+return ‘sess_’ + Math.random().toString(36).slice(2) + Date.now().toString(36);
+}
 })();
 
 function trackSession() {
@@ -243,8 +247,8 @@ ROM: [
 };
 
 var PL = {
-INT: [“Sommer”,“Acerbi”,“Bastoni”,“Bisseck”,“Barella”,“Calhanoglu”,“Sucic”,“Dimarco”,“Dumfries”,“Thuram”,“Esposito”],
-NAP: [“Milinkovic-Savic”,“Juan Jesus”,“Buongiorno”,“Olivera”,“Politano”,“Gilmour”,“Lobotka”,“Spinazzola”,“De Bruyne”,“McTominay”,“Hojlund”],
+INT: [“Sommer”,“Acerbi”,“Bastoni”,“Bisseck”,“Barella”,“Calhanoglu”,“Sucic”,“Dimarco”,“Dumfries”,“Thuram”,“Lautaro”],
+NAP: [“Milinkovic-Savic”,“Juan Jesus”,“Buongiorno”,“Olivera”,“Politano”,“Gilmour”,“Lobotka”,“Spinazzola”,“De Bruyne”,“McTominay”,“Raspadori”],
 ACM: [“Maignan”,“Tomori”,“De Winter”,“Pavlovic”,“Saelemaekers”,“Fofana”,“Modric”,“Rabiot”,“Bartesaghi”,“Pulisic”,“Leao”],
 COM: [“Butez”,“Smolcic”,“Ramon”,“Kempf”,“Valle”,“Perrone”,“Da Cunha”,“Vojvoda”,“Nico Paz”,“Baturina”,“Douvikas”],
 JUV: [“Perin”,“Kalulu”,“Bremer”,“Kelly”,“Cambiaso”,“Locatelli”,“Koopmeiners”,“Conceicao”,“McKennie”,“Boga”,“Yildiz”],
@@ -282,8 +286,8 @@ var BLOCK_MU = {
 // ═══════════════════════════════════════════════════
 
 var INJURIES = {
-INT: { players:[“Lautaro (soleo)”,“Mkhitaryan (muscolare)”], diffidati:[“Carlos Augusto”,“Sucic”], strPenalty:8, xGPenalty:0.22, outUntilMd:32 },
-NAP: { players:[“Di Lorenzo (ginocchio)”,“Rrahmani (bicipite)”,“Neres (caviglia)”,“Vergara (plantare)”], diffidati:[], strPenalty:14, xGPenalty:0.1, outUntilMd:33 },
+INT: { players:[“Mkhitaryan (muscolare)”], diffidati:[“Carlos Augusto”,“Sucic”], strPenalty:4, xGPenalty:0.10, outUntilMd:33 },
+NAP: { players:[“Di Lorenzo (ginocchio)”,“Rrahmani (bicipite)”,“Neres (caviglia)”,“Vergara (plantare)”,“Hojlund (infortunio)”], diffidati:[], strPenalty:18, xGPenalty:0.18, outUntilMd:34 },
 ACM: { players:[“Gabbia (ernia)”,“Loftus-Cheek (mascella)”], diffidati:[“Athekame”,“Fofana”,“Modric”,“Saelemaekers”], strPenalty:6, xGPenalty:0.05, outUntilMd:32 },
 COM: { players:[“Addai (achille, out)”], diffidati:[“Addai”,“Da Cunha”], strPenalty:2, xGPenalty:0.0, outUntilMd:31 },
 ROM_MD32_oppStrReduction: 0,
@@ -901,7 +905,7 @@ document.addEventListener(‘click’,function(e){var el=e.target;while(el&&el!=
 document.addEventListener(‘change’,function(e){var el=e.target;if(el&&el.getAttribute){var ac=el.getAttribute(‘data-action’);if(ac===‘selchange’){var sh=document.getElementById(‘sh’),sa=document.getElementById(‘sa’);if(sh)state.home=sh.value;if(sa)state.away=sa.value;state.match=null;state.evs=[];state.score={h:0,a:0};state.fin=false;state.playing=false;state.pred.locked=false;state.pred.h=’’;state.pred.a=’’;state.pred.lastMsg=’’;if(playInterval){clearInterval(playInterval);playInterval=null;}render();}if(ac===‘predchange’){var phx=document.getElementById(‘ph’),pax=document.getElementById(‘pa’);if(phx)state.predHome=phx.value;if(pax)state.predAway=pax.value;render();}if(ac===‘simSetting’){if(el.id===‘sim_homeFormation’)state.simSet.homeFormation=el.value;else if(el.id===‘sim_awayFormation’)state.simSet.awayFormation=el.value;render();}if(ac===‘simSlider’){var v2=parseInt(el.value,10);if(el.id===‘sim_homeRotation’)state.simSet.homeRotation=v2;else if(el.id===‘sim_awayRotation’)state.simSet.awayRotation=v2;else if(el.id===‘sim_homeMorale’)state.simSet.homeMorale=v2;else if(el.id===‘sim_awayMorale’)state.simSet.awayMorale=v2;render();}}});
 document.addEventListener(‘input’,function(e){var el=e.target;if(!el||!el.getAttribute)return;var ac=el.getAttribute(‘data-action’);if(ac===‘simSlider’){var v=parseInt(el.value,10);var col=v>66?’#ff1744’:v>33?’#ffd740’:’#00e676’;var wrap=el.closest(’.sim-slider-wrap’);if(wrap){var valEl=wrap.querySelector(’.sim-slider-val’);if(valEl){valEl.textContent=v;valEl.style.color=col;}}}if(ac===‘predInput’){if(el.id===‘pred_h’)state.pred.h=el.value;if(el.id===‘pred_a’)state.pred.a=el.value;}});
 document.addEventListener(‘DOMContentLoaded’,function(){try{render();trackSession();loadMatchHistory();}catch(e){var root=document.getElementById(‘root’);if(root){root.style.cssText=‘background:#07090d;color:#ff1744;padding:20px;font-family:monospace’;root.innerHTML=’<h2>Error</h2><pre>’+e.message+’\n’+(e.stack||’’)+’</pre>’;}}});
-  </script>
+</script>
 
 </body>
 </html>
